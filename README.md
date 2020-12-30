@@ -12,28 +12,26 @@ sequenceDiagram
 	中间人 -->> -clientA:单号、中间人的eth地址
 	
 	#第一次以太交易：A->中间人
-	clientA ->>+ ethereum: 发送转账交易，发送eth到中间人的eth地址
-	ethereum -->>- clientA: 返回交易id
-	clientA ->>+ 中间人: 交易id、单号
+	clientA ->>+ 中间人: 构造转账交易并使用A的私钥签名交易--from:A,to:中间人
+	中间人->> ethereum: 验证交易内容，修改交易单状态:，发送交易到ethereum
+	中间人 -->>- clientA: 返回交易id,交易状态
 	
-	loop 监听区块
+	loop 监听发送的交易
 		中间人 ->>+ ethereum:通过交易id查询交易
 		ethereum -->>- 中间人:返回交易信息
 		中间人 ->> 中间人:解析交易信息,修改交易单状态：
 	end
-	中间人-->>-clientA:返回交易解析结果，交易单状态
 	
 	#第二次fabric交易:B->A
-	clientB ->>+ fabric:发送交易，将asset发送到clientA的fabric accAdd
-	fabric -->>- clientB: 返回交易结果
-	clientB ->>+ 中间人: 交易id,单号,B的eth地址
+	clientB ->>+ 中间人:构造转账交易并使用B的私钥签名交易--from:B,to:A，eth address：B
+	中间人 ->> fabric:验证交易内容，修改交易单状态:，发送交易到fabric
+	中间人-->>- clientB: 交易id,单号,B的eth地址
 	
-	loop 监听区块
+	loop 监听发送的交易
 		中间人 ->>+ fabric:getTransactionByID
 		fabric -->>- 中间人:返回交易信息
 		中间人 ->> 中间人:解析交易信息,修改交易单状态:
 	end
-	中间人-->>- clientB:返回交易解析结果，交易单状态
 	
 	#第三次以太交易：中间人->B
 	中间人->>+ ethereum: 发送转账交易，from:中间人，to：clientB
