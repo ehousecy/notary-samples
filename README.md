@@ -111,3 +111,32 @@ sequenceDiagram
 3. monitor tx with Cross-chain txid
 4. verify each transaction(from, to, amount, channel)
 5. commit final transaction both side
+
+> ```中间人服务``` 开发内容
+
+##### client
+
+1. 构造ETH及fabric交易并签名
+2. 发起跨链交易请求并返回跨链交易标识（index or cross-chain txid）
+3. 查询、展示跨链交易信息
+
+
+##### cross-chain transaction service
+
+1. 创建cross-chain tx
+2. 数据库增删改查接口
+3. 交易查询修改
+4. 交易校验
+5. 监听交易执行结果
+6. 确认跨链交易，并构造发起最终确认交易（包含ETH以及Fabric）
+
+##### 网络搭建及模块集成
+
+* ETH 私网搭建
+    * 创建账户
+    * 配置协作账户
+* Fabric 网络搭建
+    * 网络部署
+    * chain-code 安装
+    
+ 
