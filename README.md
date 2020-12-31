@@ -116,27 +116,43 @@ sequenceDiagram
 
 ##### client
 
-1. 构造ETH及fabric交易并签名
-2. 发起跨链交易请求并返回跨链交易标识（index or cross-chain txid）
-3. 查询、展示跨链交易信息
+1. 构造ETH及fabric交易并签名   2+2+2 
+2. 发起跨链交易请求并返回跨链交易标识（index or cross-chain txid）1+2
+3. 查询、展示跨链交易信息 1
 
 
 ##### cross-chain transaction service
 
-1. 创建cross-chain tx
+1. 创建cross-chain tx  
 2. 数据库增删改查接口
-3. 交易查询修改
-4. 交易校验
-5. 监听交易执行结果
-6. 确认跨链交易，并构造发起最终确认交易（包含ETH以及Fabric）
+3. 交易查询修改  2
+4. 交易校验（ETH && fabric） 1 + 1
+5. 监听交易执行结果 0.5 + 0.5
+6. 确认跨链交易，并构造发起最终确认交易（包含ETH以及Fabric）0.5 + 0.5
+
 
 ##### 网络搭建及模块集成
 
-* ETH 私网搭建
-    * 创建账户
+* ETH 私网搭建 0.5
+    * 创建账户 
     * 配置协作账户
-* Fabric 网络搭建
+* Fabric 网络搭建 1.5
     * 网络部署
     * chain-code 安装
     
+    
+##### test && debug
  
+ pending : 1 + 1  
+
+##### 推文
+
+2 + 2 
+
+``` total: 24/2 = 12day ```
+
+##### open issue
+
+1. fabric go-sdk 需改造源码，实现构造和发送交易接口（签名，背书，发送）
+2. grpc
+3. rollback not considered
