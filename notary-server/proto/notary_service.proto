@@ -1,6 +1,10 @@
 syntax = "proto3";
 
+
+// auto gen codes: protoc --go_out=paths=source_relative:. -I. *.proto
+
 package proto;
+option go_package = "github.com/ehousecy/notary-samples/notary-server/proto;proto";
 
 service NotaryService {
   rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
