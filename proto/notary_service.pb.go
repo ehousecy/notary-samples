@@ -4,11 +4,15 @@
 // 	protoc        v3.13.0
 // source: notary_service.proto
 
-// auto gen codes: protoc --go_out=paths=source_relative:. -I. *.proto
+// auto gen codes: protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative *.proto
 
 package proto
 
 import (
+	context "context"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -1432,11 +1436,10 @@ var file_notary_service_proto_rawDesc = []byte{
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x4f, 0x70, 0x54, 0x69, 0x63,
 	0x6b, 0x65, 0x74, 0x52, 0x65, 0x71, 0x1a, 0x18, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x41,
 	0x64, 0x6d, 0x69, 0x6e, 0x4f, 0x70, 0x54, 0x69, 0x63, 0x6b, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70,
-	0x22, 0x00, 0x42, 0x3e, 0x5a, 0x3c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
+	0x22, 0x00, 0x42, 0x2a, 0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
 	0x2f, 0x65, 0x68, 0x6f, 0x75, 0x73, 0x65, 0x63, 0x79, 0x2f, 0x6e, 0x6f, 0x74, 0x61, 0x72, 0x79,
-	0x2d, 0x73, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x73, 0x2f, 0x6e, 0x6f, 0x74, 0x61, 0x72, 0x79, 0x2d,
-	0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x3b, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2d, 0x73, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x73, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1745,4 +1748,228 @@ func file_notary_service_proto_init() {
 	file_notary_service_proto_rawDesc = nil
 	file_notary_service_proto_goTypes = nil
 	file_notary_service_proto_depIdxs = nil
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConnInterface
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion6
+
+// NotaryServiceClient is the client API for NotaryService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type NotaryServiceClient interface {
+	CreateCTX(ctx context.Context, in *CreateCrossTxReq, opts ...grpc.CallOption) (*CreateCrossTxResp, error)
+	SubmitTx(ctx context.Context, in *TransferPropertyRequest, opts ...grpc.CallOption) (*TransferPropertyResponse, error)
+	ListTickets(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListTxResponse, error)
+	GetTicket(ctx context.Context, in *QueryTxRequest, opts ...grpc.CallOption) (*QueryTxResponse, error)
+	OpTicket(ctx context.Context, in *AdminOpTicketReq, opts ...grpc.CallOption) (*AdminOpTicketResp, error)
+}
+
+type notaryServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewNotaryServiceClient(cc grpc.ClientConnInterface) NotaryServiceClient {
+	return &notaryServiceClient{cc}
+}
+
+func (c *notaryServiceClient) CreateCTX(ctx context.Context, in *CreateCrossTxReq, opts ...grpc.CallOption) (*CreateCrossTxResp, error) {
+	out := new(CreateCrossTxResp)
+	err := c.cc.Invoke(ctx, "/proto.NotaryService/CreateCTX", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *notaryServiceClient) SubmitTx(ctx context.Context, in *TransferPropertyRequest, opts ...grpc.CallOption) (*TransferPropertyResponse, error) {
+	out := new(TransferPropertyResponse)
+	err := c.cc.Invoke(ctx, "/proto.NotaryService/SubmitTx", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *notaryServiceClient) ListTickets(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ListTxResponse, error) {
+	out := new(ListTxResponse)
+	err := c.cc.Invoke(ctx, "/proto.NotaryService/ListTickets", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *notaryServiceClient) GetTicket(ctx context.Context, in *QueryTxRequest, opts ...grpc.CallOption) (*QueryTxResponse, error) {
+	out := new(QueryTxResponse)
+	err := c.cc.Invoke(ctx, "/proto.NotaryService/GetTicket", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *notaryServiceClient) OpTicket(ctx context.Context, in *AdminOpTicketReq, opts ...grpc.CallOption) (*AdminOpTicketResp, error) {
+	out := new(AdminOpTicketResp)
+	err := c.cc.Invoke(ctx, "/proto.NotaryService/OpTicket", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// NotaryServiceServer is the server API for NotaryService service.
+type NotaryServiceServer interface {
+	CreateCTX(context.Context, *CreateCrossTxReq) (*CreateCrossTxResp, error)
+	SubmitTx(context.Context, *TransferPropertyRequest) (*TransferPropertyResponse, error)
+	ListTickets(context.Context, *Empty) (*ListTxResponse, error)
+	GetTicket(context.Context, *QueryTxRequest) (*QueryTxResponse, error)
+	OpTicket(context.Context, *AdminOpTicketReq) (*AdminOpTicketResp, error)
+}
+
+// UnimplementedNotaryServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedNotaryServiceServer struct {
+}
+
+func (*UnimplementedNotaryServiceServer) CreateCTX(context.Context, *CreateCrossTxReq) (*CreateCrossTxResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateCTX not implemented")
+}
+func (*UnimplementedNotaryServiceServer) SubmitTx(context.Context, *TransferPropertyRequest) (*TransferPropertyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitTx not implemented")
+}
+func (*UnimplementedNotaryServiceServer) ListTickets(context.Context, *Empty) (*ListTxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTickets not implemented")
+}
+func (*UnimplementedNotaryServiceServer) GetTicket(context.Context, *QueryTxRequest) (*QueryTxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTicket not implemented")
+}
+func (*UnimplementedNotaryServiceServer) OpTicket(context.Context, *AdminOpTicketReq) (*AdminOpTicketResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OpTicket not implemented")
+}
+
+func RegisterNotaryServiceServer(s *grpc.Server, srv NotaryServiceServer) {
+	s.RegisterService(&_NotaryService_serviceDesc, srv)
+}
+
+func _NotaryService_CreateCTX_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCrossTxReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotaryServiceServer).CreateCTX(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NotaryService/CreateCTX",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotaryServiceServer).CreateCTX(ctx, req.(*CreateCrossTxReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NotaryService_SubmitTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransferPropertyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotaryServiceServer).SubmitTx(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NotaryService/SubmitTx",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotaryServiceServer).SubmitTx(ctx, req.(*TransferPropertyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NotaryService_ListTickets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotaryServiceServer).ListTickets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NotaryService/ListTickets",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotaryServiceServer).ListTickets(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NotaryService_GetTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryTxRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotaryServiceServer).GetTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NotaryService/GetTicket",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotaryServiceServer).GetTicket(ctx, req.(*QueryTxRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NotaryService_OpTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminOpTicketReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotaryServiceServer).OpTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NotaryService/OpTicket",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotaryServiceServer).OpTicket(ctx, req.(*AdminOpTicketReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _NotaryService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.NotaryService",
+	HandlerType: (*NotaryServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateCTX",
+			Handler:    _NotaryService_CreateCTX_Handler,
+		},
+		{
+			MethodName: "SubmitTx",
+			Handler:    _NotaryService_SubmitTx_Handler,
+		},
+		{
+			MethodName: "ListTickets",
+			Handler:    _NotaryService_ListTickets_Handler,
+		},
+		{
+			MethodName: "GetTicket",
+			Handler:    _NotaryService_GetTicket_Handler,
+		},
+		{
+			MethodName: "OpTicket",
+			Handler:    _NotaryService_OpTicket_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "notary_service.proto",
 }
