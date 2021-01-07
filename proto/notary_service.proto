@@ -50,6 +50,7 @@ message CreateCrossTxResp {
   string cTxId =  2; //cross transaction id
   string vEthAddress =  3;
   string vFabAddress = 4;
+  bytes createTime = 5;
 }
 
 // this request is used for users to send tokens to the verifier/notary
@@ -114,6 +115,16 @@ message CrossTx {
   string cTxId = 1;
   CrossTxDetail detail = 2;
   CrossTxStatus status = 3;
+  bytes createTime = 4;
+  bytes lastUpdateTime = 5;
+}
+
+// blockchain transaction records
+message TxIdsInBlock{
+  string UETid = 1;
+  string VETid = 2;
+  string FETid = 3;
+  string FVTid = 4;
 }
 
 
@@ -133,6 +144,7 @@ message QueryTxRequest{
 message QueryTxResponse{
   Error error = 1;
   CrossTx detail = 2;
+  TxIdsInBlock blockchainTxs = 3;
 }
 
 enum TicketOps{
