@@ -27,6 +27,8 @@ message CrossTxDetail {
   string fFrom = 4;
   string fTo = 5;
   string fAmount = 6;
+  string fChannel = 7;
+  string fChaincodeName = 8;
 }
 
 // error message with error code, set code to none-zero values if error happens
@@ -131,7 +133,6 @@ message QueryTxRequest{
 message QueryTxResponse{
   Error error = 1;
   CrossTx detail = 2;
-  CrossTxStatus status = 3;
 }
 
 enum TicketOps{
