@@ -6,7 +6,7 @@ type TxExecResult struct {
 }
 
 type TxHandler interface {
-	ValidateTx([]byte) bool
+	ValidateTx([]byte, string) bool
 	MonitorTx(txid string) chan TxExecResult
 	BuildTx(args ...string) []byte
 }
