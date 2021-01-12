@@ -5,6 +5,7 @@ syntax = "proto3";
 
 package proto;
 option go_package = "github.com/ehousecy/notary-samples/proto";
+import "google/protobuf/timestamp.proto";
 
 service NotaryService {
   rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
@@ -50,7 +51,8 @@ message CreateCrossTxResp {
   string cTxId =  2; //cross transaction id
   string vEthAddress =  3;
   string vFabAddress = 4;
-  bytes createTime = 5;
+  google.protobuf.Timestamp createTime = 5;
+
 }
 
 // this request is used for users to send tokens to the verifier/notary
@@ -115,8 +117,8 @@ message CrossTx {
   string cTxId = 1;
   CrossTxDetail detail = 2;
   CrossTxStatus status = 3;
-  bytes createTime = 4;
-  bytes lastUpdateTime = 5;
+  google.protobuf.Timestamp createTime = 4;
+  google.protobuf.Timestamp lastUpdateTime = 5;
 }
 
 // blockchain transaction records
