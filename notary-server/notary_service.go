@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	pb "github.com/ehousecy/notary-samples/proto"
+	"log"
 )
 
 type NotaryService struct {
@@ -50,5 +51,13 @@ func (n *NotaryService)GetTicket(ctx context.Context, in *pb.QueryTxRequest)(*pb
 func (n *NotaryService)OpTicket(ctx context.Context, in *pb.AdminOpTicketReq)(*pb.AdminOpTicketResp, error)  {
 	return &pb.AdminOpTicketResp{
 
+	}, nil
+}
+
+func (n *NotaryService)TestDial(ctx context.Context, in *pb.Ping) (*pb.Pong, error)  {
+	log.Printf("Receive ping: %s\n", in.Ping)
+	log.Printf("sending pong\n")
+	return &pb.Pong{
+		Pong: "ping received",
 	}, nil
 }
