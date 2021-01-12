@@ -22,11 +22,10 @@ func TestDecodeBytes(t *testing.T) {
 		ShouldBeNil(err)
 		txHex := hexutil.Encode(txBytes)
 
-		var decodeTx *types.Transaction
-		err = rlp.DecodeBytes(txBytes, &decodeTx)
-		ShouldBeNil(err)
+		decodedTx := decodeTx(txBytes)
+		ShouldNotBeNil(decodedTx)
 
-		encoded, err := rlp.EncodeToBytes(decodeTx)
+		encoded, err := rlp.EncodeToBytes(decodedTx)
 		ShouldBeNil(err)
 		encodedHex := hexutil.Encode(encoded)
 		ShouldEqual(encodedHex, txHex)
@@ -35,6 +34,11 @@ func TestDecodeBytes(t *testing.T) {
 
 	})
 }
+
+func TestContext(t *testing.T)  {
+
+}
+
 
 func constructTx() *types.Transaction {
 	randPriv := fmt.Sprintf("%x", generatePrivKey())

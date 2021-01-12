@@ -120,6 +120,15 @@ sequenceDiagram
 2. 发起跨链交易请求并返回跨链交易标识（index or cross-chain txid）1+2
 3. 查询、展示跨链交易信息 1
 
+``` 
+usages
+1. notarycli create-ticket --efrom --eto --emount --ffrom --fto --famount --fchannel --fcc
+2. notarycli submit-tx --ticket-id --privatekey --network-id
+3. notarycli list tickets
+4. notarycli list ticket --ticket-id
+5. notarycli process --ticket-id --op-code 
+```
+
 
 ##### cross-chain transaction service
 
