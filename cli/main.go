@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"github.com/ehousecy/notary-samples/cli/cmd"
