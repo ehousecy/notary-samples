@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"github.com/ehousecy/notary-samples/notary-server/services"
 	pb "github.com/ehousecy/notary-samples/proto"
+	"github.com/go-playground/validator/v10"
 )
 
+var validate *validator.Validate
+
 type NotaryService struct {
-	pb.UnimplementedNotaryServiceServer
+	provider services.CrossTxDataService
 }
 
 //service NotaryService {
@@ -18,14 +22,20 @@ type NotaryService struct {
 //}
 
 func NewNotaryService() *NotaryService {
+	validate = validator.New()
 	return &NotaryService{
-
+		provider: services.NewCrossTxDataServiceProvider(),
 	}
 }
 
 func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) (*pb.CreateCrossTxResp, error) {
+	crossTxBase, err := covertCreateCrossTxReq(in)
+	if err != nil {
+		return nil, err
+	}
+	cid, err := n.provider.CreateCrossTx(crossTxBase)
 	return &pb.CreateCrossTxResp{
-		CTxId: "12345",
+		CTxId: cid,
 	}, nil
 }
 
@@ -37,37 +47,28 @@ func (n *NotaryService) SubmitTx(ctx context.Context, in *pb.TransferPropertyReq
 }
 
 func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.ListTxResponse, error) {
+	crossTxInfos, err := n.provider.QueryAllCrossTxInfo()
+	if err != nil {
+		return nil, err
+	}
+	var cts = make([]*pb.CrossTx, 0, len(crossTxInfos))
+	for _, cti := range crossTxInfos {
+		cts = append(cts, convertToCrossTx(cti))
+	}
 	return &pb.ListTxResponse{
-
+		Detail: cts,
 	}, nil
 }
 
 func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*pb.QueryTxResponse, error) {
-
+	crossTxInfo, err := n.provider.QueryCrossTxInfoByCID(in.TicketId)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.QueryTxResponse{
-		Error: nil,
-		Detail: &pb.CrossTx{
-			CTxId: "111",
-			Detail: &pb.CrossTxDetail{
-				EFrom:          "123",
-				ETo:            "456",
-				EAmount:        "789",
-				FFrom:          "ffrom",
-				FTo:            "fto",
-				FAmount:        "fa",
-				FChannel:       "channel",
-				FChaincodeName: "chaincode",
-			},
-			Status:         &pb.CrossTxStatus{Status: &pb.CrossTxStatus_TStatus{TStatus: pb.TicketStatus_finished}},
-			CreateTime:     nil,
-			LastUpdateTime: nil,
-		},
-		BlockchainTxs: &pb.TxIdsInBlock{
-			UETid: "123456",
-			VETid: "654321",
-			FETid: "789456",
-			FVTid: "987654",
-		},
+		Error:         nil,
+		Detail:        convertToCrossTx(*crossTxInfo),
+		BlockchainTxs: convertToTxIdsInBlock(*crossTxInfo),
 	}, nil
 }
 
@@ -75,4 +76,52 @@ func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (
 	return &pb.AdminOpTicketResp{
 
 	}, nil
+}
+
+func covertCreateCrossTxReq(req *pb.CreateCrossTxReq) (services.CrossTxBase, error) {
+	detail := req.Detail
+	crossTxBase := services.CrossTxBase{
+		EthFrom:         detail.EFrom,
+		EthTo:           detail.ETo,
+		EthAmount:       detail.EAmount,
+		FabricFrom:      detail.FFrom,
+		FabricTo:        detail.FTo,
+		FabricAmount:    detail.FAmount,
+		FabricChannel:   detail.FChannel,
+		FabricChaincode: detail.FChaincodeName,
+	}
+	err := validate.Struct(crossTxBase)
+	return crossTxBase, err
+}
+
+func convertToCrossTx(cti services.CrossTxInfo) *pb.CrossTx {
+	return &pb.CrossTx{
+		CTxId: cti.ID,
+		Detail: &pb.CrossTxDetail{
+			EFrom:          cti.EthFrom,
+			ETo:            cti.EthTo,
+			EAmount:        cti.EthAmount,
+			FFrom:          cti.FabricFrom,
+			FTo:            cti.FabricTo,
+			FAmount:        cti.FabricAmount,
+			FChannel:       cti.FabricChannel,
+			FChaincodeName: cti.FabricChaincode,
+		},
+		Status:         &pb.CrossTxStatus{Status: &pb.CrossTxStatus_TStatus{TStatus: pb.TicketStatus_finished}},
+		CreateTime:     nil,
+		LastUpdateTime: nil,
+	}
+}
+
+func convertToTxIdsInBlock(cti services.CrossTxInfo) *pb.TxIdsInBlock {
+	txIds := &pb.TxIdsInBlock{}
+	if cti.FabricTx != nil {
+		txIds.FETid = cti.FabricTx.FromTxID
+		txIds.FVTid = cti.FabricTx.ToTxID
+	}
+	if cti.EthTx != nil {
+		txIds.UETid = cti.EthTx.FromTxID
+		txIds.VETid = cti.EthTx.ToTxID
+	}
+	return txIds
 }
