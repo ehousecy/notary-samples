@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/ehousecy/notary-samples/notary-server/constant"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"time"
@@ -57,31 +58,61 @@ func init() {
 	DB.MustExec(createTableSql)
 }
 
-func (td TxDetail) GetByCIDAndType() (*TxDetail, error) {
+func (td TxDetail) GetByCIDAndType() ([]*TxDetail, error) {
 	return getByCTxIDAndType(td.CrossTxID, td.Type)
 }
 
-func (td TxDetail) VerifyExistedValidCIDAndType() (bool, error) {
-	txDetail, err := getByCTxIDAndType(td.CrossTxID, td.Type)
+func ValidateExistedValidTxDetailCIDAndType(cid int64, txType string) (bool, error) {
+	//查询是否存在
+	txDetails, err := getByCTxIDAndType(cid, txType)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
 		return false, err
 	}
+	//判断是否无效
 	//todo:添加无效状态判断
-	if txDetail != nil && txDetail.TxStatus != "" {
-		return true, nil
+	if len(txDetails) > 0 {
+		for _, td := range txDetails {
+			if td.TxStatus != constant.TxStatusFromFinished {
+				return true, nil
+			}
+		}
 	}
 	return false, nil
 }
 
+func NewTransferFromTx(ctd *CrossTxDetail, txType string, txID string) TxDetail {
+	amount := ctd.FabricAmount
+	txFrom := ctd.FabricFrom
+	if txType == constant.TypeEthereum {
+		amount = ctd.EthAmount
+		txFrom = ctd.EthFrom
+	}
+	td := TxDetail{
+		BaseTxDetail: BaseTxDetail{
+			TxFrom:    txFrom,
+			Amount:    amount,
+			TxStatus:  constant.TxStatusFromCreated,
+			Type:      txType,
+			CrossTxID: ctd.ID,
+		},
+		UpdateTxDetailModel: UpdateTxDetailModel{
+			FromTxID:       txID,
+			FromTxCreateAt: time.Now(),
+		},
+	}
+	return td
+}
 func (td TxDetail) Save(tx *sqlx.Tx) (int64, error) {
+	td.TxStatus = constant.TxStatusFromCreated
+	td.FromTxCreateAt = time.Now()
 	return InsertTxDetail(td, tx)
 }
 
 func (td *TxDetail) CompleteTransferFromTx(tx *sqlx.Tx) error {
-	td.TxStatus = "fromCompleted"
+	td.TxStatus = constant.TxStatusFromFinished
 	td.FromTxFinishAt = time.Now()
 	rows, err := UpdateTxDetailByID(*td, tx)
 	if err != nil {
@@ -94,9 +125,12 @@ func (td *TxDetail) CompleteTransferFromTx(tx *sqlx.Tx) error {
 }
 
 func (td *TxDetail) BoundTransferToTx(txID string, tx *sqlx.Tx) error {
+	if td.TxStatus != constant.TxStatusFromFinished {
+		return errors.New("当前交易不能代理转账")
+	}
 	td.ToTxID = txID
 	td.ToTxCreateAt = time.Now()
-	td.TxStatus = "waitingToComplete"
+	td.TxStatus = constant.TxStatusToCreated
 	rows, err := UpdateTxDetailByID(*td, tx)
 	if err != nil {
 		return err
@@ -109,11 +143,10 @@ func (td *TxDetail) BoundTransferToTx(txID string, tx *sqlx.Tx) error {
 
 func (td *TxDetail) CompleteTransferToTx(tx *sqlx.Tx) error {
 	//校验需要完成的交易状态
-	//todo:交易状态替换
-	if td.TxStatus != "..." {
+	if td.TxStatus != constant.TxStatusToCreated {
 		return errors.New("当前交易不能完成")
 	}
-	td.TxStatus = "Completed"
+	td.TxStatus = constant.TxStatusToFinished
 	td.ToTxFinishAt = time.Now()
 	rows, err := UpdateTxDetailByID(*td, tx)
 	if err != nil {
@@ -161,24 +194,41 @@ func UpdateTxDetailByID(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 	return rows, err
 }
 
-func getByCTxIDAndType(cid int64, t string) (*TxDetail, error) {
+func getByCTxIDAndType(cid int64, t string) ([]*TxDetail, error) {
 	builder := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"cross_tx_id": cid, "type": t})
-	return execGetSql(builder)
+	return execSelectSql(builder)
 }
 
 func getByCTxIDAndTypeAndStatus(cid int64, t string, status string) (*TxDetail, error) {
 	builder := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"cross_tx_id": cid, "type": t, "tx_status": status})
-	return execGetSql(builder)
+	return execGetSql(builder, cid)
 }
 
-func execGetSql(builder sq.SelectBuilder) (*TxDetail, error) {
+func execGetSql(builder sq.SelectBuilder, cid ...int64) (*TxDetail, error) {
 	querySql, args, err := builder.ToSql()
 	if err != nil {
 		log.Panicln(err)
 		return nil, err
 	}
-	octd := &TxDetail{}
-	err = DB.Get(octd, querySql, args...)
+	td := &TxDetail{}
+	err = DB.Get(td, querySql, args...)
+	if err != nil {
+		log.Panicln(err)
+	}
+	if len(cid) > 0 && td.CrossTxID != cid[0] {
+		return nil, errors.New("交易id不匹配")
+	}
+	return td, err
+}
+
+func execSelectSql(builder sq.SelectBuilder) ([]*TxDetail, error) {
+	querySql, args, err := builder.ToSql()
+	if err != nil {
+		log.Panicln(err)
+		return nil, err
+	}
+	var octd []*TxDetail
+	err = DB.Select(octd, querySql, args...)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -201,18 +251,11 @@ func GetTxDetailByCTxID(cid ...int64) ([]*TxDetail, error) {
 }
 
 func GetCrossTxByFromTxID(txID string, cid ...int64) (*TxDetail, error) {
-	querySql, args, err := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"from_tx_id": txID}).ToSql()
-	if err != nil {
-		log.Panicln(err)
-		return nil, err
-	}
-	octd := &TxDetail{}
-	err = DB.Get(octd, querySql, args...)
-	if err != nil {
-		log.Panicln(err)
-	}
-	if len(cid) > 0 && octd.CrossTxID != cid[0] {
-		return nil, errors.New("交易id不匹配")
-	}
-	return octd, err
+	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"from_tx_id": txID})
+	return execGetSql(getSql, cid...)
+}
+
+func GetCrossTxByToTxID(txID string, cid ...int64) (*TxDetail, error) {
+	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"to_tx_id": txID})
+	return execGetSql(getSql, cid...)
 }

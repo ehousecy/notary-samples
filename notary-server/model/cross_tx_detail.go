@@ -94,8 +94,10 @@ func init() {
 	DB.MustExec(createTableSql)
 }
 
-func (ctd CrossTxDetail) Save() (int64, error) {
-	return InsertCrossTxDetail(ctd)
+func (ctd *CrossTxDetail) Save() (int64, error) {
+	ctd.Status = constant.StatusCreated
+	ctd.CreatedAt = time.Now()
+	return insertCrossTxDetail(*ctd)
 }
 
 func (ctd CrossTxDetail) GetById() (*CrossTxDetail, error) {
@@ -114,6 +116,9 @@ func (ctd CrossTxDetail) Update(tx ...*sqlx.Tx) error {
 }
 
 func (ctd *CrossTxDetail) CreateTransferFromTxInfo(txID string, t string, tx ...*sqlx.Tx) error {
+	if err := ctd.ValidateHostingStatus(); err != nil {
+		return err
+	}
 	switch t {
 	case constant.TypeEthereum:
 		ctd.EthFromTxID = txID
@@ -123,14 +128,26 @@ func (ctd *CrossTxDetail) CreateTransferFromTxInfo(txID string, t string, tx ...
 		return errors.New("交易类型不支持")
 	}
 	ctd.UpdatedAt = time.Now()
-	err := ctd.Update(tx...)
-	if err != nil {
+	if err := ctd.Update(tx...); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (ctd *CrossTxDetail) ValidateHostingStatus() error {
+	if ctd.Status != constant.StatusCreated {
+		if ctd.Status == constant.StatusCancelled {
+			return errors.New("跨链交易已取消")
+		}
+		return errors.New("跨链交易当前状态不能托管资产")
+	}
+	return nil
+}
+
 func (ctd *CrossTxDetail) CompleteTransferFromTx(txID string, t string, tx ...*sqlx.Tx) error {
+	if err := ctd.ValidateHostingStatus(); err != nil {
+		return err
+	}
 	switch t {
 	case constant.TypeEthereum:
 		if ctd.EthFromTxID != txID {
@@ -146,14 +163,28 @@ func (ctd *CrossTxDetail) CompleteTransferFromTx(txID string, t string, tx ...*s
 		return errors.New("交易类型不支持")
 	}
 	ctd.UpdatedAt = time.Now()
-	err := ctd.Update(tx...)
+	//todo:检查是否两个交易托管交易都完成，完成更新跨链交易状态
+	//检查是否完成全部托管交易
+	tds, err := GetTxDetailByCTxID(ctd.ID)
 	if err != nil {
+		return err
+	}
+	for _, td := range tds {
+		if td.FromTxID != txID && td.TxStatus == constant.TxStatusFromFinished {
+			ctd.Status = constant.StatusHosted
+			break
+		}
+	}
+	if err := ctd.Update(tx...); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (ctd *CrossTxDetail) BoundTransferToTxInfo(txID string, t string, tx ...*sqlx.Tx) error {
+	if ctd.Status != constant.StatusHosted {
+		return errors.New("当前交易不能代理转账")
+	}
 	switch t {
 	case constant.TypeEthereum:
 		ctd.EthToTxID = txID
@@ -162,11 +193,8 @@ func (ctd *CrossTxDetail) BoundTransferToTxInfo(txID string, t string, tx ...*sq
 	default:
 		return errors.New("交易类型不支持")
 	}
-	//todo:检查是否两个交易托管交易都完成，完成更新跨链交易状态
-
 	ctd.UpdatedAt = time.Now()
-	err := ctd.Update(tx...)
-	if err != nil {
+	if err := ctd.Update(tx...); err != nil {
 		return err
 	}
 	return nil
@@ -188,16 +216,25 @@ func (ctd *CrossTxDetail) CompleteTransferToTx(txID string, t string, tx ...*sql
 		return errors.New("交易类型不支持")
 	}
 	//todo:检查是否两个分发交易都完成 完成修改最终状态
+	tds, err := GetTxDetailByCTxID(ctd.ID)
+	if err != nil {
+		return err
+	}
+	for _, td := range tds {
+		if td.ToTxID != txID && td.TxStatus == constant.TxStatusToFinished {
+			ctd.Status = constant.StatusFinished
+			break
+		}
+	}
 
 	ctd.UpdatedAt = time.Now()
-	err := ctd.Update(tx...)
-	if err != nil {
+	if err := ctd.Update(tx...); err != nil {
 		return err
 	}
 	return nil
 }
 
-func InsertCrossTxDetail(ctd CrossTxDetail) (int64, error) {
+func insertCrossTxDetail(ctd CrossTxDetail) (int64, error) {
 	ctd.CreatedAt = time.Now()
 	insertMap, err := Struct2Map(ctd.BaseCrossTxDetail)
 	delete(insertMap, "id")

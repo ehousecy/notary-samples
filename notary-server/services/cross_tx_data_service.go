@@ -41,8 +41,11 @@ type CrossTxInfo struct {
 type CrossTxDataService interface {
 	CreateCrossTx(CrossTxBase) (string, error)
 	CreateTransferFromTx(cid string, txID string, txType string) error
+	ValidateEnableCompleteTransferFromTx(cid string, txID string) error
 	CompleteTransferFromTx(cid string, txID string) error
+	ValidateEnableBoundTransferToTx(cidStr string, boundTxID string) error
 	BoundTransferToTx(cid string, boundTxID, txID string) error
+	ValidateEnableCompleteTransferToTx(cid string, txID string) error
 	CompleteTransferToTx(cid string, txID string) error
 	QueryCrossTxInfoByCID(string) (*CrossTxInfo, error)
 	QueryAllCrossTxInfo() ([]CrossTxInfo, error)
