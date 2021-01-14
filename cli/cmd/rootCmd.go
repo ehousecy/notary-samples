@@ -13,4 +13,8 @@ var RootCmd = &cobra.Command{
 
 func init()  {
 	RootCmd.AddCommand(testCmd)
+	RootCmd.AddCommand(createTxCmd)
+	RootCmd.AddCommand(listTicketCmd)
+	RootCmd.AddCommand(queryCmd)
+	RootCmd.AddCommand(submitTxCmd)
 }

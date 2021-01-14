@@ -155,3 +155,7 @@ func getPublicAddr(priv string) (string, error) {
 	pubAddress := crypto.PubkeyToAddress(privKey.PublicKey)
 	return pubAddress.String(), nil
 }
+
+func (e *EthHanlder)()  {
+	
+}
