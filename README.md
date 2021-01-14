@@ -118,19 +118,20 @@ sequenceDiagram
 
 1. 构造ETH及fabric交易并签名   2+2+2 
 2. 发起跨链交易请求并返回跨链交易标识（index or cross-chain txid）1+2
-3. 查询、展示跨链交易信息 1
+3. 查询、展示跨链交易信息 
 
-``` 
+
 usages
-1. notarycli create-ticket --efrom --eto --emount --ffrom --fto --famount --fchannel --fcc
-2. notarycli submit-tx --ticket-id --privatekey --network-type
-3. notarycli list tickets
-4. notarycli list ticket --ticket-id
+1. ~~notarycli create-ticket --efrom --eto --emount --ffrom --fto --famount --fchannel --fcc~~
+2. ~~notarycli submit-tx --ticket-id --privatekey --network-type~~
+3. ~~notarycli list tickets~~
+4. ~~notarycli list ticket --ticket-id~~
 5. notarycli approve --ticket-id
 6. notarycli reject --ticket-id
-```
-``todo`` 
 
+`
+
+``todo`` 
 * how to construct raw transaction from client
 * how to sign transaction
 * interfaces to interact with db
