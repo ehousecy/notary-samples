@@ -154,8 +154,12 @@ db interfaces
 
 * query ticket detail according ticket-id
 * query if a transaction exist in db(including both ethereum and fabric)
-blockchain transaction contruct/validate/monitor
+* blockchain transaction construct/validate/monitor/handler
 ```
+monitor
+1. scan block and record transactions
+2. confirm transaction after 6 blocks confirmed
+3. check transaction execute result, confirm if success
 
 ##### 网络搭建及模块集成
 
