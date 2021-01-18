@@ -5,6 +5,7 @@ import (
 	"github.com/ehousecy/notary-samples/notary-server/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/go-playground/validator/v10"
+	"log"
 )
 
 var validate *validator.Validate
@@ -44,6 +45,10 @@ func (n *NotaryService) SubmitTx(ctx context.Context, in *pb.TransferPropertyReq
 		Error: nil,
 		ETxid: "45678",
 	}, nil
+}
+
+func (n *NotaryService) ConstructTx(pb.NotaryService_ConstructTxServer) error {
+	panic("implement me")
 }
 
 func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.ListTxResponse, error) {
@@ -124,4 +129,12 @@ func convertToTxIdsInBlock(cti services.CrossTxInfo) *pb.TxIdsInBlock {
 		txIds.VETid = cti.EthTx.ToTxID
 	}
 	return txIds
+}
+
+func (n *NotaryService) TestDial(ctx context.Context, in *pb.Ping) (*pb.Pong, error) {
+	log.Printf("Receive ping: %s\n", in.Ping)
+	log.Printf("sending pong\n")
+	return &pb.Pong{
+		Pong: "ping received",
+	}, nil
 }

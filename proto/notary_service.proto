@@ -10,12 +10,26 @@ import "google/protobuf/timestamp.proto";
 service NotaryService {
   rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
   rpc SubmitTx(TransferPropertyRequest) returns(TransferPropertyResponse) {}
+  rpc ConstructTx(stream TxStream) returns (stream TxStream){}
   rpc ListTickets(Empty) returns (ListTxResponse) {}
   rpc GetTicket(QueryTxRequest) returns (QueryTxResponse){}
   rpc OpTicket(AdminOpTicketReq) returns (AdminOpTicketResp) {}
+  rpc TestDial(Ping) returns (Pong){} // grpc test purpose
 }
 
 // empty message, used to fill in the rpc arguments or return types
+message Ping{
+  string ping =  1;
+}
+
+message TxStream{
+   bytes txData = 1;
+}
+
+message Pong{
+  string pong = 1;
+}
+
 message Empty{
 
 }

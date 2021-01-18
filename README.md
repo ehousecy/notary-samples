@@ -118,16 +118,25 @@ sequenceDiagram
 
 1. 构造ETH及fabric交易并签名   2+2+2 
 2. 发起跨链交易请求并返回跨链交易标识（index or cross-chain txid）1+2
-3. 查询、展示跨链交易信息 1
+3. 查询、展示跨链交易信息 
 
-``` 
+
 usages
-1. notarycli create-ticket --efrom --eto --emount --ffrom --fto --famount --fchannel --fcc
-2. notarycli submit-tx --ticket-id --privatekey --network-id
-3. notarycli list tickets
-4. notarycli list ticket --ticket-id
-5. notarycli process --ticket-id --op-code 
-```
+1. ~~notarycli create-ticket --efrom --eto --emount --ffrom --fto --famount --fchannel --fcc~~
+2. ~~notarycli submit-tx --ticket-id --privatekey --network-type~~
+3. ~~notarycli list tickets~~
+4. ~~notarycli list ticket --ticket-id~~
+5. notarycli approve --ticket-id
+6. notarycli reject --ticket-id
+
+`
+
+``todo`` 
+* how to construct raw transaction from client
+* how to sign transaction
+* interfaces to interact with db
+* monitor transaction
+
 
 
 ##### cross-chain transaction service
@@ -139,6 +148,18 @@ usages
 5. 监听交易执行结果 0.5 + 0.5
 6. 确认跨链交易，并构造发起最终确认交易（包含ETH以及Fabric）0.5 + 0.5
 
+```
+rpc interfaces
+db interfaces
+
+* query ticket detail according ticket-id
+* query if a transaction exist in db(including both ethereum and fabric)
+* blockchain transaction construct/validate/monitor/handler
+```
+monitor
+1. scan block and record transactions
+2. confirm transaction after 6 blocks confirmed
+3. check transaction execute result, confirm if success
 
 ##### 网络搭建及模块集成
 
