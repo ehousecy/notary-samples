@@ -156,6 +156,43 @@ func getPublicAddr(priv string) (string, error) {
 	return pubAddress.String(), nil
 }
 
-func (e *EthHanlder)()  {
+func (e *EthHanlder)subscribe()  {
+	client, err := ethclient.Dial("ws://")
+	exitSubError(err)
+	headers := make(chan *types.Header, 1)
+
+	sub, err := client.SubscribeNewHead(context.Background(), headers)
+	exitSubError(err)
+	for {
+		select {
+		case err = <- sub.Err():
+			exitSubError(err)
+		case newHeader := <- headers:
+			//todo
+			// query transaction
+			// update transaction
+			latestNum := newHeader.Number
+			var blockNum *big.Int
+			blockNum.Sub(latestNum, big.NewInt(1))
+			block, err := client.BlockByNumber(context.Background(), blockNum)
+			exitSubError(err)
+			txs := block.Transactions()
+			client.TransactionReceipt(context.Background(), txs[0])
+
+		}
+	}
+
+}
+
+// record new received transaction and confirm transactions according to 6 block confirmation
+func (e *EthHanlder)scanBlock()  {
 	
 }
+
+
+func exitSubError(err error)  {
+	if err != nil {
+		log.Fatalf("Subscribe failed: %v", err)
+	}
+}
+

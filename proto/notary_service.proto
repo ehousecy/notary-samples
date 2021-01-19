@@ -9,8 +9,7 @@ import "google/protobuf/timestamp.proto";
 
 service NotaryService {
   rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
-  rpc SubmitTx(TransferPropertyRequest) returns(TransferPropertyResponse) {}
-  rpc ConstructTx(stream TxStream) returns (stream TxStream){}
+  rpc SubmitTx(stream TransferPropertyRequest) returns(stream TransferPropertyResponse) {}
   rpc ListTickets(Empty) returns (ListTxResponse) {}
   rpc GetTicket(QueryTxRequest) returns (QueryTxResponse){}
   rpc OpTicket(AdminOpTicketReq) returns (AdminOpTicketResp) {}
@@ -20,10 +19,6 @@ service NotaryService {
 // empty message, used to fill in the rpc arguments or return types
 message Ping{
   string ping =  1;
-}
-
-message TxStream{
-   bytes txData = 1;
 }
 
 message Pong{
@@ -72,7 +67,7 @@ message CreateCrossTxResp {
 // this request is used for users to send tokens to the verifier/notary
 // in this request, user should specify the target cross transaction id and network type(ether or fabric)
 message TransferPropertyRequest{
-  bytes signedData = 1; // signed ether transaction data
+  bytes data = 1; // signed ether transaction data
   string cTxId = 2; // cross transaction id
   enum NetworkType{
     eth = 0;
@@ -85,7 +80,7 @@ message TransferPropertyRequest{
 // or return error message if transaction is not valid
 message TransferPropertyResponse{
   Error error = 1;
-  string eTxid = 2;
+  bytes txData = 2;
 }
 
 
