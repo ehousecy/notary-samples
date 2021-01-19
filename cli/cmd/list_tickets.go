@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 )
+
 // this file implement the folowing command
 // notarycli list tickets
 var listTicketCmd = &cobra.Command{

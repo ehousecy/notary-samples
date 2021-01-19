@@ -6,12 +6,12 @@ import (
 
 // RootCmd is the root command for client commands.
 var RootCmd = &cobra.Command{
-	Use:   "ebaas-cli",
-	Short: "ebaas-cli is used to interact with ehouse different services",
-	ValidArgs:nil,
+	Use:       "ebaas-cli",
+	Short:     "ebaas-cli is used to interact with ehouse different services",
+	ValidArgs: nil,
 }
 
-func init()  {
+func init() {
 	RootCmd.AddCommand(testCmd)
 	RootCmd.AddCommand(createTxCmd)
 	RootCmd.AddCommand(listTicketCmd)

@@ -1,7 +1,7 @@
 package common
 
 type TxExecResult struct {
-	Err error
+	Err       error
 	TxReceipt string
 }
 

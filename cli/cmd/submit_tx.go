@@ -11,12 +11,12 @@ var submitTxCmd = &cobra.Command{
 }
 
 const (
-	subTicketKey = "subTicketKey"
-	subPrivKey = "subPrivKey"
+	subTicketKey  = "subTicketKey"
+	subPrivKey    = "subPrivKey"
 	subNetworkKey = "subNetworkKey"
 )
 
-func init()  {
+func init() {
 	err := addStringOption(submitTxCmd, subTicketKey, ticketIdOption, "", "", ticketDescription, required)
 	exitErr(err)
 	err = addStringOption(submitTxCmd, subPrivKey, privateKeyOption, "", "", privateKeyOption, required)
@@ -25,7 +25,7 @@ func init()  {
 }
 
 // get notary service details according the target ticket id, construct raw transaction and sign
-func execSubmitCmd(cmd *cobra.Command, args []string)  {
+func execSubmitCmd(cmd *cobra.Command, args []string) {
 
 }
 

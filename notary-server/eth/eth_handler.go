@@ -14,7 +14,7 @@ import (
 )
 
 type EthHanlder struct {
-	client *ethclient.Client //https rpc
+	client  *ethclient.Client //https rpc
 	monitor *EthMonitor
 }
 
@@ -25,8 +25,8 @@ func NewEthHandler(url string) *EthHanlder {
 		log.Printf("Create client failed: %v", err)
 		return nil
 	}
-	handler :=  &EthHanlder{
-		client: c,
+	handler := &EthHanlder{
+		client:  c,
 		monitor: NewMonitor(url),
 	}
 	handler.monitor.Start()
@@ -34,7 +34,7 @@ func NewEthHandler(url string) *EthHanlder {
 }
 
 // add validate rules here
-func (e *EthHanlder)ValidateTx(signedBytes []byte, ticketId string) bool {
+func (e *EthHanlder) ValidateTx(signedBytes []byte, ticketId string) bool {
 	signedTx := decodeTx(signedBytes)
 	_ = signedTx
 	//todo
@@ -44,7 +44,7 @@ func (e *EthHanlder)ValidateTx(signedBytes []byte, ticketId string) bool {
 }
 
 // monitorTx should monitor transaction execute result, return error if transaction failed.
-func (e *EthHanlder)MonitorTx(txId string) chan common.TxExecResult {
+func (e *EthHanlder) MonitorTx(txId string) chan common.TxExecResult {
 	ch := make(chan common.TxExecResult, 1)
 	// todo
 	// monitor logic here
@@ -52,8 +52,8 @@ func (e *EthHanlder)MonitorTx(txId string) chan common.TxExecResult {
 }
 
 // build and sign ethereum transaction
-func (e *EthHanlder)BuildTx(args... string) []byte {
-	if len(args) != 3{
+func (e *EthHanlder) BuildTx(args ...string) []byte {
+	if len(args) != 3 {
 		log.Printf("Input error, should input from/to/amount/priv\n")
 		return []byte{}
 	}
@@ -102,7 +102,7 @@ func decodeTx(tx []byte) *types.Transaction {
 }
 
 // construct ethereum transaction base on from/to/amount/
-func (e *EthHanlder)buildTx(from, to, amount string) *types.Transaction {
+func (e *EthHanlder) buildTx(from, to, amount string) *types.Transaction {
 
 	fromAddr := common2.HexToAddress(from)
 	nonce, err := e.client.PendingNonceAt(context.Background(), fromAddr)
@@ -112,7 +112,7 @@ func (e *EthHanlder)buildTx(from, to, amount string) *types.Transaction {
 	}
 	gasPrice, err := e.client.SuggestGasPrice(context.Background())
 	if err != nil {
-		log.Printf("Get gas price failed %v\n",err)
+		log.Printf("Get gas price failed %v\n", err)
 		return nil
 	}
 
@@ -129,9 +129,8 @@ func (e *EthHanlder)buildTx(from, to, amount string) *types.Transaction {
 	return tx
 }
 
-
 // sign transactions using private key
-func (e *EthHanlder)signTx(priv string, tx *types.Transaction) *types.Transaction {
+func (e *EthHanlder) signTx(priv string, tx *types.Transaction) *types.Transaction {
 	privateKey, err := crypto.HexToECDSA(priv)
 	if err != nil {
 		log.Printf("Invalid private key: %v\n", err)
@@ -148,7 +147,7 @@ func (e *EthHanlder)signTx(priv string, tx *types.Transaction) *types.Transactio
 		log.Printf("Sign transaction failed %v\n", err)
 		return nil
 	}
-	return  signed
+	return signed
 }
 
 // validate private key and derive public key
@@ -161,19 +160,16 @@ func getPublicAddr(priv string) (string, error) {
 	return pubAddress.String(), nil
 }
 
-
 // record new received transaction and confirm transactions according to 6 block confirmation
-func (e *EthHanlder)scanBlock()  {
-	
+func (e *EthHanlder) scanBlock() {
+
 }
 
-
-func EthloggerPrint(content string)  {
+func EthloggerPrint(content string) {
 	log.Printf("[Eth handler] %s\n", content)
 }
 
-func EthLogPrintf(content string, v... interface{})  {
+func EthLogPrintf(content string, v ...interface{}) {
 	ss := fmt.Sprintf(content, v...)
 	EthloggerPrint(ss)
 }
-
