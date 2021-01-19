@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/ehousecy/notary-samples/fabric/tx"
 	"github.com/ehousecy/notary-samples/notary-server/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/go-playground/validator/v10"
@@ -12,6 +13,7 @@ var validate *validator.Validate
 
 type NotaryService struct {
 	provider services.CrossTxDataService
+	fh       tx.Handler
 }
 
 //service NotaryService {
@@ -26,6 +28,7 @@ func NewNotaryService() *NotaryService {
 	validate = validator.New()
 	return &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
+		fh: tx.New(),
 	}
 }
 
@@ -40,15 +43,19 @@ func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) 
 	}, nil
 }
 
-func (n *NotaryService) SubmitTx(ctx context.Context, in *pb.TransferPropertyRequest) (*pb.TransferPropertyResponse, error) {
-	return &pb.TransferPropertyResponse{
-		Error: nil,
-		ETxid: "45678",
-	}, nil
-}
-
-func (n *NotaryService) ConstructTx(pb.NotaryService_ConstructTxServer) error {
-	panic("implement me")
+func (n *NotaryService) SubmitTx(srv pb.NotaryService_SubmitTxServer) error {
+	recv, err := srv.Recv()
+	if err != nil {
+		return err
+	}
+	switch recv.NetworkType {
+	case pb.TransferPropertyRequest_fabric:
+		err := n.fh.HandleOfflineTx(srv, recv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.ListTxResponse, error) {

@@ -24,6 +24,20 @@ import (
 	"math/rand"
 )
 
+func SignPayload(ctx contextApi.Client, payload *common.Payload) (*fab.SignedEnvelope, error) {
+	payloadBytes, err := proto.Marshal(payload)
+	if err != nil {
+		return nil, errors.WithMessage(err, "marshaling of payload failed")
+	}
+
+	signingMgr := ctx.SigningManager()
+	signature, err := signingMgr.Sign(payloadBytes, ctx.PrivateKey())
+	if err != nil {
+		return nil, errors.WithMessage(err, "signing of payload failed")
+	}
+	return &fab.SignedEnvelope{Payload: payloadBytes, Signature: signature}, nil
+}
+
 func CreatePayload(tx *fab.Transaction) (*common.Payload, error) {
 	hdr := &common.Header{}
 	if err := proto.Unmarshal(tx.Proposal.Proposal.Header, hdr); err != nil {

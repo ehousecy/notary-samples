@@ -9,6 +9,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -33,7 +34,7 @@ type Client struct {
 	// sdk clients
 	SDK            *fabsdk.FabricSDK
 	rc             *resmgmt.Client
-	cc             *channel.Client
+	CC             *channel.Client
 	lc             *ledger.Client
 	ContextClient  contextApi.Client
 	eventClientMap *event.Client
@@ -205,3 +206,25 @@ func (c *Client) SendSignedEnvelopTx(envelope *fab.SignedEnvelope) (*fab.Transac
 	return f, err
 }
 
+func (c *Client) CreateTransaction(request channel.Request) (string, *fab.SignedEnvelope, error) {
+	var options []channel.RequestOption
+	options = append(options, channel.WithTimeout(fab.Execute, time.Minute*10))
+	options = append(options, channel.WithRetry(retry.DefaultChannelOpts))
+	response, err := c.CC.InvokeHandler(newExecuteHandler(), request, options...)
+	if err != nil {
+		return "", nil, err
+	}
+
+	tx, err := sdkutil.CreateTransaction(response.Proposal, response.Responses)
+	payload, err := sdkutil.CreatePayload(tx)
+	envelope, _ := sdkutil.SignPayload(c.ContextClient, payload)
+	return string(response.Proposal.TxnID), envelope, nil
+}
+
+func newExecuteHandler(next ...invoke.Handler) invoke.Handler {
+	return invoke.NewSelectAndEndorseHandler(
+		invoke.NewEndorsementValidationHandler(
+			invoke.NewSignatureValidationHandler(next...),
+		),
+	)
+}
