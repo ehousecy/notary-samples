@@ -16,6 +16,7 @@ import (
 type EthHanlder struct {
 	client  *ethclient.Client //https rpc
 	monitor *EthMonitor
+	// todo configure monitor from file
 }
 
 // create a ethereum handler with endpoint url
@@ -30,8 +31,24 @@ func NewEthHandler(url string) *EthHanlder {
 		monitor: NewMonitor(url),
 	}
 	handler.monitor.Start()
+	handler.loop()
 	return handler
 }
+
+func (e *EthHanlder)loop()  {
+	events := make(chan txConfirmEvent, 100)
+	e.monitor.Subscribe(events)
+	go func (event chan txConfirmEvent){
+		for{
+			select {
+			case txEvent := <- events:
+				//
+				_ = txEvent
+			}
+		}
+	}(events)
+}
+
 
 // add validate rules here
 func (e *EthHanlder) ValidateTx(signedBytes []byte, ticketId string) bool {
@@ -44,11 +61,10 @@ func (e *EthHanlder) ValidateTx(signedBytes []byte, ticketId string) bool {
 }
 
 // monitorTx should monitor transaction execute result, return error if transaction failed.
-func (e *EthHanlder) MonitorTx(txId string) chan common.TxExecResult {
-	ch := make(chan common.TxExecResult, 1)
-	// todo
+func (e *EthHanlder) SendTx(txData []byte)  {
+
 	// monitor logic here
-	return ch
+	return
 }
 
 // build and sign ethereum transaction
@@ -88,6 +104,10 @@ func (e *EthHanlder) BuildTx(args ...string) []byte {
 		return []byte{}
 	}
 	return signedBytes
+}
+
+func (e *EthHanlder)SignTx(priv string, ticketId string) []byte  {
+	return []byte{}
 }
 
 // helper functions
@@ -158,11 +178,6 @@ func getPublicAddr(priv string) (string, error) {
 	}
 	pubAddress := crypto.PubkeyToAddress(privKey.PublicKey)
 	return pubAddress.String(), nil
-}
-
-// record new received transaction and confirm transactions according to 6 block confirmation
-func (e *EthHanlder) scanBlock() {
-
 }
 
 func EthloggerPrint(content string) {

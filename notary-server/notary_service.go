@@ -10,6 +10,19 @@ type NotaryService struct {
 	pb.UnimplementedNotaryServiceServer
 }
 
+type TxExecResult struct {
+	Err       error
+	TxReceipt string
+}
+
+type TxHandler interface {
+	ValidateTx([]byte, string) bool
+	SendTx(txData []byte)
+	BuildTx(args ...string) []byte
+	SignTx(priv string, ticketId string) []byte
+}
+
+
 //service NotaryService {
 //rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
 //rpc SubmitTx(TransferPropertyRequest) returns(TransferPropertyResponse) {}

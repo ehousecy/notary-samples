@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/syndtr/goleveldb/leveldb"
 	"math/big"
+	"sync"
 )
 
 // ethereum monitor
@@ -18,10 +19,18 @@ var (
 	numberConfirmation = new(big.Int).SetUint64(6)
 )
 
+type txConfirmEvent struct {
+	txid string
+	isSuccess bool
+}
+
 type EthMonitor struct {
 	Client      *ethclient.Client // ws rpc
 	DBInterface *leveldb.DB
+	systemDb    interface{}
+	subs []chan txConfirmEvent
 	done        chan interface{}
+	wg sync.WaitGroup
 }
 
 func NewMonitor(url string) *EthMonitor {
@@ -37,15 +46,26 @@ func NewMonitor(url string) *EthMonitor {
 		Client:      c,
 		DBInterface: db,
 		done:        make(chan interface{}, 1),
+		subs: make([]chan txConfirmEvent, 200),
 	}
 }
 
 func (m *EthMonitor) Start() {
 	go m.loop()
+	m.wg.Add(1)
+
 }
 
 func (m *EthMonitor) Stop() {
 	close(m.done)
+}
+
+func (m *EthMonitor)Subscribe(eventChan chan txConfirmEvent)  {
+	if len(m.subs) == 0 {
+		m.wg.Done()
+	}
+	m.subs = append(m.subs, eventChan)
+	return
 }
 
 func (m *EthMonitor) loop() {
@@ -68,7 +88,7 @@ func (m *EthMonitor) loop() {
 			m.scanBlock(currNumber)
 			shouldConfirmed := new(big.Int)
 			shouldConfirmed.Sub(currNumber, numberConfirmation)
-			m.confirmBlock(shouldConfirmed)
+			go m.confirmBlock(shouldConfirmed)
 			// exit if stops monitor
 		case <-m.done:
 			return
@@ -167,15 +187,28 @@ func (m *EthMonitor) validateReceipt(txHash string, targetHeight *big.Int) {
 		return
 	}
 	receiptRes := isSuccess(txReceipt)
-	m.confirmTx(txHash, receiptRes)
+	m.wg.Wait()
+	m.notify(txHash, receiptRes)
 
 }
 
 // if the transaction is confirmed with 6 blocks, delete record and notify ETH handler
-func (m *EthMonitor) confirmTx(txhash string, isSuccess bool) error {
-	//todo
-	//notify eth handler
+func (m *EthMonitor) notify(txhash string, isSuccess bool) error {
+	txEvent := txConfirmEvent{
+		txid: txhash,
+		isSuccess: isSuccess,
+	}
+	if len(m.subs) >0 {
+		for _, sub := range m.subs{
+			sub <- txEvent
+		}
+	}
+	return nil
+}
+
+func (m *EthMonitor)RemoveTx(txhash string) error  {
 	key := []byte(txhash)
 	err := m.DBInterface.Delete(key, nil)
 	return err
 }
+
