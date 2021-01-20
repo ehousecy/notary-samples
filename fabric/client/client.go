@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/ehousecy/notary-samples/fabric/business"
 	"github.com/ehousecy/notary-samples/fabric/sdkutil"
 	"github.com/golang/protobuf/proto"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
@@ -69,12 +70,12 @@ func GetClientByChannelID(channelID string) (*Client, error) {
 
 func New(channelID string) (*Client, error) {
 	client := &Client{ChannelID: channelID}
-	sdk, err := sdkutil.InitSDK(channelID)
+	sdk, err := business.Support.InitSDK(channelID)
 	if err != nil {
 		return nil, err
 	}
 	client.SDK = sdk
-	contextOptions, err := sdkutil.GetContextOptionsByChannelID(channelID)
+	contextOptions, err := business.Support.GetContextOptions(channelID)
 	if err != nil {
 		return nil, err
 	}

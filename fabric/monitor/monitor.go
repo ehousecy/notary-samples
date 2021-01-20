@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"github.com/ehousecy/notary-samples/fabric/business"
 	"github.com/ehousecy/notary-samples/fabric/client"
 	"github.com/ehousecy/notary-samples/fabric/tx"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
@@ -14,8 +15,7 @@ type FabricMonitor struct {
 }
 
 func (fm *FabricMonitor) Start() {
-	//获取所有通道
-	channelIDs := []string{"mychannel"}
+	channelIDs := business.Support.GetSupportChannels()
 	//1.开启区块监听
 	fm.BlockEventsMonitor(channelIDs)
 }

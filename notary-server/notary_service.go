@@ -28,7 +28,7 @@ func NewNotaryService() *NotaryService {
 	validate = validator.New()
 	return &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
-		fh: tx.New(),
+		fh:       tx.New(),
 	}
 }
 
@@ -37,6 +37,11 @@ func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) 
 	if err != nil {
 		return nil, err
 	}
+
+	if err = n.fh.ValidateEnableSupport(crossTxBase.FabricChannel, crossTxBase.FabricChaincode, "", crossTxBase.FabricAmount); err != nil {
+		return nil, err
+	}
+
 	cid, err := n.provider.CreateCrossTx(crossTxBase)
 	return &pb.CreateCrossTxResp{
 		CTxId: cid,

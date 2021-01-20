@@ -9,11 +9,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"log"
-	"path/filepath"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -231,15 +229,6 @@ func ValidateSignedEnvelope(envelope *fab.SignedEnvelope, txID fab.TransactionID
 }
 
 //=========提取公共类
-func InitSDK(channelID string) (*fabsdk.FabricSDK, error) {
-	ccpPath := filepath.Join("config.yaml")
-	return fabsdk.New(config.FromFile(filepath.Clean(ccpPath)))
-}
-func GetContextOptionsByChannelID(channelID string) ([]fabsdk.ContextOption, error) {
-	var contextOptions []fabsdk.ContextOption
-	contextOptions = append(contextOptions, fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
-	return contextOptions, nil
-}
 func GetClient(sdk *fabsdk.FabricSDK, options ...fabsdk.ContextOption) (contextApi.Client, error) {
 	userContext := sdk.Context(options...)
 	client, err := userContext()
