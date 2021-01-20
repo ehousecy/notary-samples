@@ -35,10 +35,9 @@ func TestDecodeBytes(t *testing.T) {
 	})
 }
 
-func TestContext(t *testing.T)  {
+func TestContext(t *testing.T) {
 
 }
-
 
 func constructTx() *types.Transaction {
 	randPriv := fmt.Sprintf("%x", generatePrivKey())
@@ -46,7 +45,6 @@ func constructTx() *types.Transaction {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 
 	value := big.NewInt(1000000000000000000) // in wei (1 eth)
 	if err != nil {
@@ -68,13 +66,12 @@ func constructTx() *types.Transaction {
 	return signedTx
 }
 
-
 //generate random bytes as account private key
 func generatePrivKey() []byte {
 	priv := make([]byte, 32)
 	s := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(s)
-	for i := 0; i < 31; i ++ {
+	for i := 0; i < 31; i++ {
 		priv[i] = byte(r.Intn(256))
 	}
 	return priv

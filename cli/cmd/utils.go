@@ -16,47 +16,48 @@ import (
 const (
 	// cli flags bind to sub-commands
 	// command options are listed here
-	eFromOption = "efrom"
-	eToOption = "eto"
-	eAmountOption = "eamount"
-	fFromOption = "ffrom"
-	fToOption = "fto"
-	fAmountOption = "famount"
-	fchannelOption = "fchannel"
-	fChaincodeOption = "fcc"
-	ticketIdOption = "ticket-id"
-	privateKeyOption = "private-key"
+	eFromOption       = "efrom"
+	eToOption         = "eto"
+	eAmountOption     = "eamount"
+	fFromOption       = "ffrom"
+	fToOption         = "fto"
+	fAmountOption     = "famount"
+	fchannelOption    = "fchannel"
+	fChaincodeOption  = "fcc"
+	ticketIdOption    = "ticket-id"
+	privateKeyOption  = "private-key"
 	networkTypeOption = "network-type"
 )
+
 // option description or command description
 const (
-	fromDescription = "The account address or account name, which is used to send property to the escrow account"
-	toDescription = "The account address or account name, which is used to receive the property on blockchain"
-	amountDescription = "The amount of the property"
-	channelDescription = "Channel name of the chaincode installed"
-	chaincodeDescription = "Chaincode name where the fabric property is recorded"
-	ticketDescription = "Notary service created cross transaction ticket id"
+	fromDescription       = "The account address or account name, which is used to send property to the escrow account"
+	toDescription         = "The account address or account name, which is used to receive the property on blockchain"
+	amountDescription     = "The amount of the property"
+	channelDescription    = "Channel name of the chaincode installed"
+	chaincodeDescription  = "Chaincode name where the fabric property is recorded"
+	ticketDescription     = "Notary service created cross transaction ticket id"
 	privateKeyDescription = "Private key used to sign the transaction, should match with the cross transaction ticket related public key"
-	networkDescription  = "On which blockchain network this transaction is sending to, ie. ethereum, fabric, btc"
+	networkDescription    = "On which blockchain network this transaction is sending to, ie. ethereum, fabric, btc"
 )
 const (
 	required = true
 	optional = false
 )
 
-func addStringOption(cmd *cobra.Command, bindKeyName, keyName, shortName, defaultValue, description string, required bool) error  {
+func addStringOption(cmd *cobra.Command, bindKeyName, keyName, shortName, defaultValue, description string, required bool) error {
 	cmd.Flags().StringP(keyName, shortName, defaultValue, description)
 	err := viper.BindPFlag(bindKeyName, cmd.Flag(keyName))
 	if err != nil {
 		return err
 	}
 	if required {
-		 return cmd.MarkFlagRequired(keyName)
+		return cmd.MarkFlagRequired(keyName)
 	}
 	return nil
 }
 
-func exitErr(err error)  {
+func exitErr(err error) {
 	if err != nil {
 		log.Fatalf("Error accured: %v", err)
 	}

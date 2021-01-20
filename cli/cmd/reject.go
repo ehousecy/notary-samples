@@ -1,6 +1,5 @@
 package cmd
 
-
 import (
 	"context"
 	"github.com/ehousecy/notary-samples/cli/grpc"
@@ -14,7 +13,7 @@ const (
 	rejectTicketKey = "rejectTicketKey"
 )
 
-func init()  {
+func init() {
 	err := addStringOption(approveCmd, rejectTicketKey, ticketIdOption, "", "", ticketDescription, required)
 	exitErr(err)
 }
@@ -30,7 +29,7 @@ func execRejectCmd(cmd *cobra.Command, args []string) {
 	op := proto.TicketOps_reject
 	resp, err := client.OpTicket(context.Background(), &proto.AdminOpTicketReq{
 		CTxTicketId: ticketId,
-		Op: op,
+		Op:          op,
 	})
 	exitErr(err)
 	log.Printf("Received resp: %v\n", resp.String())

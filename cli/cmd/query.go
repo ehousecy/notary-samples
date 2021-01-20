@@ -13,7 +13,7 @@ const (
 	queryTicketKey = "queryTicketKey"
 )
 
-func init()  {
+func init() {
 	err := addStringOption(queryCmd, queryTicketKey, ticketIdOption, "", "", ticketDescription, required)
 	exitErr(err)
 }
@@ -33,5 +33,5 @@ func execQueryCmd(cmd *cobra.Command, args []string) {
 	exitErr(err)
 	// todo
 	// gracefully display response
-	log.Printf("%s",resp.String())
+	log.Printf("%s", resp.String())
 }

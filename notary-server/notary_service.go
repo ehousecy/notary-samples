@@ -16,6 +16,19 @@ type NotaryService struct {
 	fh       tx.Handler
 }
 
+type TxExecResult struct {
+	Err       error
+	TxReceipt string
+}
+
+type TxHandler interface {
+	ValidateTx([]byte, string) bool
+	SendTx(txData []byte)
+	BuildTx(args ...string) []byte
+	SignTx(priv string, ticketId string) []byte
+}
+
+
 //service NotaryService {
 //rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
 //rpc SubmitTx(TransferPropertyRequest) returns(TransferPropertyResponse) {}
@@ -25,6 +38,30 @@ type NotaryService struct {
 //}
 
 func NewNotaryService() *NotaryService {
+// 	return &NotaryService{}
+// }
+
+// func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) (*pb.CreateCrossTxResp, error) {
+// 	return &pb.CreateCrossTxResp{}, nil
+// }
+
+// func (n *NotaryService) SubmitTx(ctx context.Context, in *pb.TransferPropertyRequest) (*pb.TransferPropertyResponse, error) {
+// 	return &pb.TransferPropertyResponse{}, nil
+// }
+
+// func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.ListTxResponse, error) {
+// 	return &pb.ListTxResponse{}, nil
+// }
+
+// func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*pb.QueryTxResponse, error) {
+// 	return &pb.QueryTxResponse{}, nil
+// }
+
+// func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (*pb.AdminOpTicketResp, error) {
+// 	return &pb.AdminOpTicketResp{}, nil
+// }
+
+
 	validate = validator.New()
 	return &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
