@@ -2,7 +2,7 @@ package business
 
 import (
 	"fmt"
-	"github.com/ehousecy/notary-samples/fabric/business/impl"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/business/impl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"sync"

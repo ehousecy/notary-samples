@@ -1,9 +1,9 @@
 package monitor
 
 import (
-	"github.com/ehousecy/notary-samples/fabric/business"
-	"github.com/ehousecy/notary-samples/fabric/client"
-	"github.com/ehousecy/notary-samples/fabric/tx"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/client"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
