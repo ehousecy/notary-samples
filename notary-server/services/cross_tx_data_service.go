@@ -38,6 +38,13 @@ type CrossTxInfo struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type ConfirmingTxInfo struct {
+	ID          string
+	TxID        string
+	isOfflineTx bool
+	ChannelID   string
+}
+
 type CrossTxDataService interface {
 	CreateCrossTx(CrossTxBase) (string, error)
 	CreateTransferFromTx(cid string, txID string, txType string) error
@@ -49,4 +56,5 @@ type CrossTxDataService interface {
 	CompleteTransferToTx(cid string, txID string) error
 	QueryCrossTxInfoByCID(string) (*CrossTxInfo, error)
 	QueryAllCrossTxInfo() ([]CrossTxInfo, error)
+	QueryConfirmingTxInfo(txType string) ([]ConfirmingTxInfo, error)
 }

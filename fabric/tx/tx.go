@@ -19,6 +19,7 @@ type Handler interface {
 	HandleLocalTx(ticketId string) error
 	HandleTxStatusBlock(channelID string, fb *peer.FilteredBlock)
 	ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) error
+	QueryLastFabricBlockNumber(channelID string) (uint64, error)
 }
 
 var confirmingTxIDMap = make(map[string]map[string]txInfo, 8)
@@ -31,11 +32,15 @@ type txInfo struct {
 
 type txHandler struct {
 	db           services.CrossTxDataService
+	bl           services.FabricBlockLogService
 	ticketIDChan chan string
 }
 
 func New() *txHandler {
-	return &txHandler{db: services.NewCrossTxDataServiceProvider(), ticketIDChan: make(chan string, 1)}
+	//todo: 查询待确认交易列表
+	return &txHandler{db: services.NewCrossTxDataServiceProvider(),
+		bl:           services.NewFabricBlockLogServiceProvider(),
+		ticketIDChan: make(chan string, 1)}
 }
 
 func (th *txHandler) HandleOfflineTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
@@ -182,7 +187,8 @@ func (th *txHandler) HandleTxStatusBlock(channelID string, fb *peer.FilteredBloc
 	for _, ft := range fb.FilteredTransactions {
 		th.handleTx(channelID, ft)
 	}
-
+	//记录处理的区块
+	th.bl.AddFabricBlockLog(fb.Number, channelID)
 }
 
 func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
@@ -234,4 +240,9 @@ func (th *txHandler) ValidateEnableSupport(channelID, chaincodeName, assetType, 
 		return fmt.Errorf("the specified fabric transaction is not supported, "+
 			"channelID=%s,chaincodeID=%s,asset=%s", channelID, chaincodeName, asset)
 	}
+	return nil
+}
+
+func (th *txHandler) QueryLastFabricBlockNumber(channelID string) (uint64, error) {
+	return th.bl.QueryLastFabricBlockNumber(channelID)
 }

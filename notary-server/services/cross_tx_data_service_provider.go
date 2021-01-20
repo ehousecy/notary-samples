@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/constant"
 	"github.com/ehousecy/notary-samples/notary-server/model"
+	"log"
 	"strconv"
 )
 
@@ -231,6 +232,22 @@ func (cts CrossTxDataServiceProvider) QueryAllCrossTxInfo() ([]CrossTxInfo, erro
 	return infos, nil
 }
 
+func (cts CrossTxDataServiceProvider) QueryConfirmingTxInfo(txType string) ([]ConfirmingTxInfo, error) {
+	tds, err := model.GetConfirmingTxDetailByType(txType)
+	if err != nil {
+		log.Printf("failed Query Confirming Tx Info, err=%v", err)
+		return nil, err
+	}
+	if len(tds) < 1 {
+		return nil, nil
+	}
+	ctis := make([]ConfirmingTxInfo, 0, len(tds))
+	for _, td := range tds {
+		ctis = append(ctis, convert2ConfirmingTxInfo(td))
+	}
+	return ctis, nil
+}
+
 func convertCrossTxBase2CrossTxDetail(ctb CrossTxBase) model.CrossTxDetail {
 	return model.CrossTxDetail{
 		BaseCrossTxDetail: model.BaseCrossTxDetail{
@@ -294,6 +311,19 @@ func convertTxDetail(td model.TxDetail) *TxDetail {
 	}
 }
 
+func convert2ConfirmingTxInfo(td *model.TxDetail) ConfirmingTxInfo {
+	var cti ConfirmingTxInfo
+	cti.ChannelID = td.ChannelID
+	cti.ID = int64ToString(td.CrossTxID)
+	if td.TxStatus == constant.TxStatusFromCreated {
+		cti.TxID = td.FromTxID
+		cti.isOfflineTx = true
+	} else {
+		cti.TxID = td.ToTxID
+		cti.isOfflineTx = false
+	}
+}
+
 func int64ToString(i int64) string {
 	return strconv.FormatInt(i, 10)
 }
@@ -312,7 +342,7 @@ func getCrossTxDetailAndTxDetailByFromTxID(cidStr string, txID string) (*model.C
 	if err != nil {
 		return nil, nil, err
 	}
-	td, err := model.GetCrossTxByFromTxID(txID, cid)
+	td, err := model.GetTxDetailByFromTxID(txID, cid)
 	return ctd, td, err
 }
 
@@ -326,7 +356,7 @@ func getCrossTxDetailAndTxDetailByToTxID(cidStr string, txID string) (*model.Cro
 	if err != nil {
 		return nil, nil, err
 	}
-	td, err := model.GetCrossTxByToTxID(txID, cid)
+	td, err := model.GetTxDetailByToTxID(txID, cid)
 	return ctd, td, err
 }
 

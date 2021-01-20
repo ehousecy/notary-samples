@@ -19,12 +19,13 @@ type TxDetail struct {
 
 type BaseTxDetail struct {
 	ID        int64  `db:"id" json:"id"`
-	TxFrom    string `db:"tx_from" json:"from"`
-	TxTo      string `db:"tx_to" json:"to"`
+	TxFrom    string `db:"tx_from" json:"tx_from"`
+	TxTo      string `db:"tx_to" json:"tx_to"`
 	Amount    string `db:"amount" json:"amount"`
 	TxStatus  string `db:"tx_status" json:"tx_status"`
 	Type      string `db:"type" json:"type"`
 	CrossTxID int64  `db:"cross_tx_id" json:"cross_tx_id"`
+	ChannelID string `db:"channel_id" json:"channel_id"`
 }
 
 type UpdateTxDetailModel struct {
@@ -34,6 +35,19 @@ type UpdateTxDetailModel struct {
 	ToTxCreateAt   time.Time `db:"to_tx_create_at" json:"to_tx_create_at"`
 	FromTxFinishAt time.Time `db:"from_tx_finish_at" json:"from_tx_finish_at"`
 	ToTxFinishAt   time.Time `db:"to_tx_finish_at" json:"to_tx_finish_at"`
+}
+
+type originalTxDetail struct {
+	BaseTxDetail
+	originalUpdateTxDetailModel
+}
+type originalUpdateTxDetailModel struct {
+	FromTxID       string         `db:"from_tx_id" json:"from_tx_id"`
+	ToTxID         sql.NullString `db:"to_tx_id" json:"to_tx_id"`
+	FromTxCreateAt time.Time      `db:"from_tx_create_at" json:"from_tx_create_at"`
+	ToTxCreateAt   sql.NullTime   `db:"to_tx_create_at" json:"to_tx_create_at"`
+	FromTxFinishAt sql.NullTime   `db:"from_tx_finish_at" json:"from_tx_finish_at"`
+	ToTxFinishAt   sql.NullTime   `db:"to_tx_finish_at" json:"to_tx_finish_at"`
 }
 
 func init() {
@@ -48,6 +62,7 @@ func init() {
 		tx_status VARCHAR(64) NULL,
 		type VARCHAR(64) NULL,
 		cross_tx_id INTEGER,
+		channel_id VARCHAR(64) '',
 		from_tx_id VARCHAR(64) NULL,
 		to_tx_id VARCHAR(64) NULL,
 		from_tx_create_at TIMESTAMP NULL,
@@ -97,6 +112,7 @@ func NewTransferFromTx(ctd *CrossTxDetail, txType string, txID string) TxDetail 
 			TxStatus:  constant.TxStatusFromCreated,
 			Type:      txType,
 			CrossTxID: ctd.ID,
+			ChannelID: ctd.FabricChannel,
 		},
 		UpdateTxDetailModel: UpdateTxDetailModel{
 			FromTxID:       txID,
@@ -108,13 +124,13 @@ func NewTransferFromTx(ctd *CrossTxDetail, txType string, txID string) TxDetail 
 func (td TxDetail) Save(tx *sqlx.Tx) (int64, error) {
 	td.TxStatus = constant.TxStatusFromCreated
 	td.FromTxCreateAt = time.Now()
-	return InsertTxDetail(td, tx)
+	return insertTxDetail(td, tx)
 }
 
 func (td *TxDetail) CompleteTransferFromTx(tx *sqlx.Tx) error {
 	td.TxStatus = constant.TxStatusFromFinished
 	td.FromTxFinishAt = time.Now()
-	rows, err := UpdateTxDetailByID(*td, tx)
+	rows, err := updateTxDetailByID(*td, tx)
 	if err != nil {
 		return err
 	}
@@ -131,7 +147,7 @@ func (td *TxDetail) BoundTransferToTx(txID string, tx *sqlx.Tx) error {
 	td.ToTxID = txID
 	td.ToTxCreateAt = time.Now()
 	td.TxStatus = constant.TxStatusToCreated
-	rows, err := UpdateTxDetailByID(*td, tx)
+	rows, err := updateTxDetailByID(*td, tx)
 	if err != nil {
 		return err
 	}
@@ -148,7 +164,7 @@ func (td *TxDetail) CompleteTransferToTx(tx *sqlx.Tx) error {
 	}
 	td.TxStatus = constant.TxStatusToFinished
 	td.ToTxFinishAt = time.Now()
-	rows, err := UpdateTxDetailByID(*td, tx)
+	rows, err := updateTxDetailByID(*td, tx)
 	if err != nil {
 		return err
 	}
@@ -158,9 +174,11 @@ func (td *TxDetail) CompleteTransferToTx(tx *sqlx.Tx) error {
 	return nil
 }
 
-func InsertTxDetail(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
+func insertTxDetail(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 	insertMap, err := Struct2Map(td.BaseTxDetail)
 	delete(insertMap, "id")
+	insertMap["from_tx_id"] = td.FromTxID
+	insertMap["from_tx_create_at"] = td.FromTxCreateAt
 
 	var result sql.Result
 	insertBuilder := sq.Insert(TxDetailTableName).SetMap(insertMap)
@@ -176,7 +194,7 @@ func InsertTxDetail(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 	return id, err
 }
 
-func UpdateTxDetailByID(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
+func updateTxDetailByID(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 	update, err := Struct2Map(td.UpdateTxDetailModel)
 	update["tx_status"] = td.TxStatus
 	updateBuilder := sq.Update(TxDetailTableName).SetMap(update).Where(sq.Eq{"id": td.ID})
@@ -210,7 +228,7 @@ func execGetSql(builder sq.SelectBuilder, cid ...int64) (*TxDetail, error) {
 		log.Panicln(err)
 		return nil, err
 	}
-	td := &TxDetail{}
+	td := &originalTxDetail{}
 	err = DB.Get(td, querySql, args...)
 	if err != nil {
 		log.Panicln(err)
@@ -218,7 +236,7 @@ func execGetSql(builder sq.SelectBuilder, cid ...int64) (*TxDetail, error) {
 	if len(cid) > 0 && td.CrossTxID != cid[0] {
 		return nil, errors.New("交易id不匹配")
 	}
-	return td, err
+	return td.convert(), err
 }
 
 func execSelectSql(builder sq.SelectBuilder) ([]*TxDetail, error) {
@@ -227,35 +245,62 @@ func execSelectSql(builder sq.SelectBuilder) ([]*TxDetail, error) {
 		log.Panicln(err)
 		return nil, err
 	}
-	var octd []*TxDetail
-	err = DB.Select(octd, querySql, args...)
+	var otd []*originalTxDetail
+	err = DB.Select(&otd, querySql, args...)
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 	}
-	return octd, err
+	return convertOriginalTxDetailArr(otd), err
 }
 
 func GetTxDetailByCTxID(cid ...int64) ([]*TxDetail, error) {
-
-	querySql, args, err := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"cross_tx_id": cid}).ToSql()
-	if err != nil {
-		log.Panicln(err)
-		return nil, err
-	}
-	var octd []*TxDetail
-	err = DB.Select(&octd, querySql, args...)
-	if err != nil {
-		log.Panicln(err)
-	}
-	return octd, err
+	builder := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"cross_tx_id": cid})
+	return execSelectSql(builder)
 }
 
-func GetCrossTxByFromTxID(txID string, cid ...int64) (*TxDetail, error) {
+func GetTxDetailByFromTxID(txID string, cid ...int64) (*TxDetail, error) {
 	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"from_tx_id": txID})
 	return execGetSql(getSql, cid...)
 }
 
-func GetCrossTxByToTxID(txID string, cid ...int64) (*TxDetail, error) {
+func GetTxDetailByToTxID(txID string, cid ...int64) (*TxDetail, error) {
 	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"to_tx_id": txID})
 	return execGetSql(getSql, cid...)
+}
+
+func GetConfirmingTxDetailByType(txType string) ([]*TxDetail, error) {
+	and := sq.And{sq.Eq{"type": txType},
+		sq.Or{sq.Eq{"tx_status": constant.TxStatusToCreated}, sq.Eq{"tx_status": constant.TxStatusFromCreated}}}
+	builder := sq.Select("*").From(TxDetailTableName).Where(and)
+	return execSelectSql(builder)
+}
+
+func (otd *originalTxDetail) convert() *TxDetail {
+	utdm := UpdateTxDetailModel{}
+	data := otd.originalUpdateTxDetailModel
+	if data.ToTxID.Valid {
+		utdm.ToTxID = data.ToTxID.String
+	}
+	if data.FromTxFinishAt.Valid {
+		utdm.FromTxFinishAt = data.FromTxFinishAt.Time
+	}
+	if data.ToTxCreateAt.Valid {
+		utdm.ToTxCreateAt = data.ToTxCreateAt.Time
+	}
+	if data.ToTxFinishAt.Valid {
+		utdm.ToTxFinishAt = data.ToTxFinishAt.Time
+	}
+	utdm.FromTxID = data.FromTxID
+	utdm.FromTxCreateAt = data.FromTxCreateAt
+	return &TxDetail{
+		BaseTxDetail:        otd.BaseTxDetail,
+		UpdateTxDetailModel: utdm,
+	}
+}
+func convertOriginalTxDetailArr(otdArr []*originalTxDetail) []*TxDetail {
+	var tdArr []*TxDetail
+	for _, oct := range otdArr {
+		tdArr = append(tdArr, oct.convert())
+	}
+	return tdArr
 }
