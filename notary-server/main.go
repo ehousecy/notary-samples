@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	servicePort = ":50051"
+	servicePort = ":37788"
 )
 
 func main() {
