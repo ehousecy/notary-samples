@@ -13,7 +13,7 @@ const (
 	appTicketKey = "appTicketKey"
 )
 
-func init()  {
+func init() {
 	err := addStringOption(approveCmd, appTicketKey, ticketIdOption, "", "", ticketDescription, required)
 	exitErr(err)
 }
@@ -29,7 +29,7 @@ func execApproveCmd(cmd *cobra.Command, args []string) {
 	op := proto.TicketOps_approve
 	resp, err := client.OpTicket(context.Background(), &proto.AdminOpTicketReq{
 		CTxTicketId: ticketId,
-		Op: op,
+		Op:          op,
 	})
 	exitErr(err)
 	log.Printf("Received resp: %v\n", resp.String())

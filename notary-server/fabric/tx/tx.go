@@ -2,10 +2,10 @@ package tx
 
 import (
 	"fmt"
-	"github.com/ehousecy/notary-samples/fabric/business"
-	"github.com/ehousecy/notary-samples/fabric/client"
-	"github.com/ehousecy/notary-samples/fabric/sdkutil"
 	"github.com/ehousecy/notary-samples/notary-server/constant"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/client"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/sdkutil"
 	"github.com/ehousecy/notary-samples/notary-server/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/golang/protobuf/proto"

@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/ehousecy/notary-samples/fabric/business"
-	"github.com/ehousecy/notary-samples/fabric/sdkutil"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/sdkutil"
 	"github.com/golang/protobuf/proto"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
