@@ -163,7 +163,6 @@ func (ctd *CrossTxDetail) CompleteTransferFromTx(txID string, t string, tx ...*s
 		return errors.New("交易类型不支持")
 	}
 	ctd.UpdatedAt = time.Now()
-	//todo:检查是否两个交易托管交易都完成，完成更新跨链交易状态
 	//检查是否完成全部托管交易
 	tds, err := GetTxDetailByCTxID(ctd.ID)
 	if err != nil {
@@ -215,7 +214,6 @@ func (ctd *CrossTxDetail) CompleteTransferToTx(txID string, t string, tx ...*sql
 	default:
 		return errors.New("交易类型不支持")
 	}
-	//todo:检查是否两个分发交易都完成 完成修改最终状态
 	tds, err := GetTxDetailByCTxID(ctd.ID)
 	if err != nil {
 		return err
@@ -274,7 +272,7 @@ func GetCrossTxDetailByID(id int64) (*CrossTxDetail, error) {
 	octd := &originalCrossTxDetail{}
 	err = DB.Get(octd, querySql, args...)
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 	}
 	return octd.convert(), err
 }

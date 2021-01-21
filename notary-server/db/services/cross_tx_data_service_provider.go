@@ -86,7 +86,6 @@ func (cts CrossTxDataServiceProvider) CompleteTransferFromTx(cidStr string, txID
 		return err
 	}
 	//2.校验需要完成的交易状态
-	//todo:交易状态替换
 	if td.TxStatus != constant.TxStatusFromCreated {
 		return errors.New("当前交易不能完成")
 	}
@@ -322,6 +321,7 @@ func convert2ConfirmingTxInfo(td *model.TxDetail) ConfirmingTxInfo {
 		cti.TxID = td.ToTxID
 		cti.isOfflineTx = false
 	}
+	return cti
 }
 
 func int64ToString(i int64) string {
@@ -361,7 +361,7 @@ func getCrossTxDetailAndTxDetailByToTxID(cidStr string, txID string) (*model.Cro
 }
 
 func validateEnableCompleteTransferFromTx(ctd *model.CrossTxDetail, td *model.TxDetail) error {
-	if td.TxStatus != constant.TxStatusToCreated || ctd.Status != constant.StatusCreated {
+	if td.TxStatus != constant.TxStatusFromCreated || ctd.Status != constant.StatusCreated {
 		return errors.New("当前交易不能代理转账")
 	}
 	return nil

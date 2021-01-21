@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/constant"
+	"github.com/jmoiron/sqlx"
 	"testing"
 )
 
@@ -17,7 +18,7 @@ func TestTxDetail_Save(t *testing.T) {
 	}
 	txDetail := NewTransferFromTx(ctd, constant.TypeFabric, fromTxID)
 	tx := DB.MustBegin()
-	defer tx.Rollback()
+	defer rollbackTx(tx, t)
 	save, err := txDetail.Save(tx)
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +36,7 @@ func TestTxDetail_CompleteTransferFromTx(t *testing.T) {
 		t.Fatal(err)
 	}
 	tx := DB.MustBegin()
-	defer tx.Rollback()
+	defer rollbackTx(tx, t)
 	if err = td.CompleteTransferFromTx(tx); err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +52,7 @@ func TestTxDetail_BoundTransferToTx(t *testing.T) {
 		t.Fatal(err)
 	}
 	tx := DB.MustBegin()
-	defer tx.Rollback()
+	defer rollbackTx(tx, t)
 	if err = td.BoundTransferToTx(toTxID, tx); err != nil {
 		t.Fatal(err)
 	}
@@ -72,5 +73,11 @@ func TestGetConfirmingTxDetailByType(t *testing.T) {
 	}
 	for _, detail := range txDetails {
 		fmt.Println(detail)
+	}
+}
+
+func rollbackTx(tx *sqlx.Tx, t *testing.T) {
+	if err := tx.Rollback(); err != nil {
+		t.Logf("unable to rollback: %v", err)
 	}
 }

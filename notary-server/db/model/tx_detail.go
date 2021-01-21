@@ -62,7 +62,7 @@ func init() {
 		tx_status VARCHAR(64) NULL,
 		type VARCHAR(64) NULL,
 		cross_tx_id INTEGER,
-		channel_id VARCHAR(64) '',
+		channel_id VARCHAR(64) default '',
 		from_tx_id VARCHAR(64) NULL,
 		to_tx_id VARCHAR(64) NULL,
 		from_tx_create_at TIMESTAMP NULL,
@@ -87,7 +87,6 @@ func ValidateExistedValidTxDetailCIDAndType(cid int64, txType string) (bool, err
 		return false, err
 	}
 	//判断是否无效
-	//todo:添加无效状态判断
 	if len(txDetails) > 0 {
 		for _, td := range txDetails {
 			if td.TxStatus != constant.TxStatusFromFinished {
