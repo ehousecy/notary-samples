@@ -1,6 +1,6 @@
 package services
 
-import "github.com/ehousecy/notary-samples/notary-server/model"
+import "github.com/ehousecy/notary-samples/notary-server/db/model"
 
 type FabricBlockLogService interface {
 	AddFabricBlockLog(blockNumber uint64, channelID string)

@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"github.com/ehousecy/notary-samples/notary-server/constant"
+	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"testing"
 )
 

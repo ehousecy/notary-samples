@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/ehousecy/notary-samples/notary-server/constant"
+	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"time"

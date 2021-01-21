@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ehousecy/notary-samples/notary-server/constant"
-	"github.com/ehousecy/notary-samples/notary-server/model"
+	"github.com/ehousecy/notary-samples/notary-server/db/constant"
+	"github.com/ehousecy/notary-samples/notary-server/db/model"
 	"log"
 	"strconv"
 )
