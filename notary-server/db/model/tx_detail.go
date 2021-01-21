@@ -274,6 +274,11 @@ func GetConfirmingTxDetailByType(txType string) ([]*TxDetail, error) {
 	return execSelectSql(builder)
 }
 
+func GetTxDetailByTxID(txID string, cid ...int64) (*TxDetail, error) {
+	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Or{sq.Eq{"to_tx_id": txID}, sq.Eq{"from_tx_id": txID}})
+	return execGetSql(getSql, cid...)
+}
+
 func (otd *originalTxDetail) convert() *TxDetail {
 	utdm := UpdateTxDetailModel{}
 	data := otd.originalUpdateTxDetailModel

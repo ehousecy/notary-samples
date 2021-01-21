@@ -160,14 +160,14 @@ func (th *txHandler) HandleLocalTx(ticketId string) error {
 	}
 
 	//验证是否能交易
-	if err = th.db.ValidateEnableBoundTransferToTx(ticketId, crossTxInfo.FabricTx.FromTxID); err != nil {
+	if err = th.db.ValidateEnableBoundTransferToTx(crossTxInfo.FabricTx.FromTxID); err != nil {
 		return err
 	}
 	txID, signedEnvelope, err := c.CreateTransaction(*request)
 	if err != nil {
 		return err
 	}
-	if err = th.db.BoundTransferToTx(ticketId, crossTxInfo.FabricTx.FromTxID, txID); err != nil {
+	if err = th.db.BoundTransferToTx(crossTxInfo.FabricTx.FromTxID, txID); err != nil {
 		return err
 	}
 
@@ -207,11 +207,11 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 		return
 	}
 
+	err := th.db.CompleteTransferTx(ft.Txid)
+	if err != nil {
+		return
+	}
 	if info.isOfflineTx {
-		err := th.db.CompleteTransferFromTx(info.ticketId, ft.Txid)
-		if err != nil {
-			return
-		}
 		crossTxInfo, err := th.db.QueryCrossTxInfoByCID(info.ticketId)
 		if err != nil {
 			return
@@ -219,11 +219,6 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 		if crossTxInfo.Status == constant.StatusHosted {
 			//todo:失败处理
 			th.HandleLocalTx(info.ticketId)
-		}
-	} else {
-		err := th.db.CompleteTransferToTx(info.ticketId, ft.Txid)
-		if err != nil {
-			return
 		}
 	}
 

@@ -64,10 +64,10 @@ func TestCrossTxDataServiceProvider_CompleteTransferFromTx_Success(t *testing.T)
 	}
 
 	for _, tt := range txTests {
-		err := provider.ValidateEnableCompleteTransferFromTx(tt.cid, tt.txID)
+		err := provider.ValidateEnableCompleteTransferFromTx(tt.txID)
 		require.NoError(t, err, "should no err validate enable complete Transfer from tx")
 		t.Logf("this cross tx enable complete %v Transfer From Tx, cid=%v, txID=%v", tt.txType, tt.cid, tt.txID)
-		if err := provider.CompleteTransferFromTx(tt.cid, tt.txID); err != nil {
+		if err := provider.CompleteTransferFromTx( tt.txID); err != nil {
 			t.Fatalf("failed complete %v Transfer From Tx, err=%v", tt.txType, err)
 		}
 		//校验状态
@@ -85,9 +85,9 @@ func TestCrossTxDataServiceProvider_BoundTransferToTx_Success(t *testing.T) {
 		{cid: cid, txID: ethToTxID, txType: constant.TypeEthereum, boundTxID: ethFromTxID},
 	}
 	for _, tt := range txTests {
-		err := provider.ValidateEnableBoundTransferToTx(tt.cid, tt.boundTxID)
+		err := provider.ValidateEnableBoundTransferToTx(tt.boundTxID)
 		require.NoError(t, err, "failed validate %v enable bound transfer to tx", tt.txType)
-		err = provider.BoundTransferToTx(tt.cid, tt.boundTxID, tt.txID)
+		err = provider.BoundTransferToTx(tt.boundTxID, tt.txID)
 		require.NoError(t, err, "failed bound transfer to tx, cid=%s, boundID=%s, txID=%s", tt.cid, tt.boundTxID, tt.txID)
 		td := getTxDetail(tt.txType, getCrossTxInfoByCID(tt.cid, t))
 		require.Equal(t, constant.TxStatusToCreated, td.TxStatus, "failed validate %v bound transfer to tx status", tt.txType)
@@ -100,9 +100,9 @@ func TestCrossTxDataServiceProvider_CompleteTransferToTx_Success(t *testing.T) {
 		{cid: cid, txID: ethToTxID, txType: constant.TypeEthereum},
 	}
 	for _, tt := range txTests {
-		err := provider.ValidateEnableCompleteTransferToTx(tt.cid, tt.txID)
+		err := provider.ValidateEnableCompleteTransferToTx( tt.txID)
 		require.NoError(t, err, "failed validate %v enable complete transfer to tx", tt.txType)
-		err = provider.CompleteTransferToTx(tt.cid, tt.txID)
+		err = provider.CompleteTransferToTx(tt.txID)
 		require.NoError(t, err, "failed complete transfer to tx, cid=%s, txID=%s", tt.cid, tt.txID)
 		td := getTxDetail(tt.txType, getCrossTxInfoByCID(tt.cid, t))
 		require.Equal(t, constant.TxStatusToFinished, td.TxStatus, "failed validate %v complete transfer to tx status", tt.txType)
