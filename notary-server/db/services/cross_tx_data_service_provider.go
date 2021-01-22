@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/ehousecy/notary-samples/notary-server/constant"
-	"github.com/ehousecy/notary-samples/notary-server/model"
+	"github.com/ehousecy/notary-samples/notary-server/db/constant"
+	"github.com/ehousecy/notary-samples/notary-server/db/model"
+	"github.com/jmoiron/sqlx"
+	"log"
 	"strconv"
 )
 
@@ -71,57 +73,36 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 	return nil
 }
 
-func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferFromTx(cidStr string, txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(cidStr, txID)
+func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferFromTx(txID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(txID)
 	if err != nil {
 		return err
 	}
 	return validateEnableCompleteTransferFromTx(ctd, td)
 }
 
-func (cts CrossTxDataServiceProvider) CompleteTransferFromTx(cidStr string, txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(cidStr, txID)
+func (cts CrossTxDataServiceProvider) CompleteTransferFromTx(txID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(txID)
 	if err != nil {
 		return err
 	}
-	//2.校验需要完成的交易状态
-	//todo:交易状态替换
-	if td.TxStatus != constant.TxStatusFromCreated {
-		return errors.New("当前交易不能完成")
-	}
-	if err = ctd.ValidateHostingStatus(); err != nil {
-		return err
-	}
-	//3.开启事务完成交易
-	tx, err := model.DB.Beginx()
+	err = completeTransferFromTx(td, ctd, txID)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
-
-	if err = td.CompleteTransferFromTx(tx); err != nil {
-		return err
-	}
-	if err = ctd.CompleteTransferFromTx(txID, td.Type, tx); err != nil {
-		return err
-	}
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(cidStr string, boundTxID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(cidStr, boundTxID)
+func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(boundTxID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(boundTxID)
 	if err != nil {
 		return err
 	}
 	return validateEnableBoundTransferToTx(ctd, td)
 }
 
-func (cts CrossTxDataServiceProvider) BoundTransferToTx(cidStr string, boundTxID, txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(cidStr, boundTxID)
+func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(boundTxID)
 	if err != nil {
 		return err
 	}
@@ -149,44 +130,26 @@ func (cts CrossTxDataServiceProvider) BoundTransferToTx(cidStr string, boundTxID
 	return nil
 }
 
-func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferToTx(cidStr string, txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByToTxID(cidStr, txID)
+func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferToTx(txID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByToTxID(txID)
 	if err != nil {
 		return err
 	}
 	return validateEnableCompleteTransferToTx(ctd, td)
 }
 
-func (cts CrossTxDataServiceProvider) CompleteTransferToTx(cidStr string, txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByToTxID(cidStr, txID)
+func (cts CrossTxDataServiceProvider) CompleteTransferToTx(txID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByToTxID(txID)
 	if err != nil {
 		return err
 	}
-	if err = validateEnableCompleteTransferToTx(ctd, td); err != nil {
-		return err
-	}
-
-	//开启事务完成交易
-	tx, err := model.DB.Beginx()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err = td.CompleteTransferToTx(tx); err != nil {
-		return err
-	}
-
-	if err = ctd.CompleteTransferToTx(txID, td.Type, tx); err != nil {
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
+	if err := completeTransferToTx(ctd, td, txID); err != nil {
 		return err
 	}
 
 	return nil
 }
+
 func (cts CrossTxDataServiceProvider) QueryCrossTxInfoByCID(cidStr string) (*CrossTxInfo, error) {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
@@ -229,6 +192,56 @@ func (cts CrossTxDataServiceProvider) QueryAllCrossTxInfo() ([]CrossTxInfo, erro
 		infos = append(infos, convertCrossTxInfo(*ctd, m[ctd.ID]...))
 	}
 	return infos, nil
+}
+
+func (cts CrossTxDataServiceProvider) QueryConfirmingTxInfo(txType string) ([]ConfirmingTxInfo, error) {
+	tds, err := model.GetConfirmingTxDetailByType(txType)
+	if err != nil {
+		log.Printf("failed Query Confirming Tx Info, err=%v", err)
+		return nil, err
+	}
+	if len(tds) < 1 {
+		return nil, nil
+	}
+	ctis := make([]ConfirmingTxInfo, 0, len(tds))
+	for _, td := range tds {
+		ctis = append(ctis, convert2ConfirmingTxInfo(td))
+	}
+	return ctis, nil
+}
+
+func (cts CrossTxDataServiceProvider) CompleteTransferTx(txID string) error {
+	td, err := model.GetTxDetailByTxID(txID)
+	if err != nil {
+		return err
+	}
+	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
+	if err != nil {
+		return err
+	}
+	if ctd.Status == constant.StatusCreated {
+		//from
+		err = completeTransferFromTx(td, ctd, txID)
+	} else if ctd.Status == constant.StatusHosted {
+		//to
+		err = completeTransferToTx(ctd, td, txID)
+	}
+	return err
+}
+
+func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferTx(txID string) error {
+	ctd, td, err := getCrossTxDetailAndTxDetailByTxID(txID)
+	if err != nil {
+		return err
+	}
+	if td.TxStatus == constant.TxStatusFromCreated && ctd.Status == constant.StatusCreated {
+		//from
+		return nil
+	} else if td.TxStatus == constant.TxStatusToCreated && ctd.Status == constant.StatusHosted {
+		//to
+		return nil
+	}
+	return fmt.Errorf("the tx unable complete, tx=%s, cid=%v", txID, ctd.ID)
 }
 
 func convertCrossTxBase2CrossTxDetail(ctb CrossTxBase) model.CrossTxDetail {
@@ -294,6 +307,20 @@ func convertTxDetail(td model.TxDetail) *TxDetail {
 	}
 }
 
+func convert2ConfirmingTxInfo(td *model.TxDetail) ConfirmingTxInfo {
+	var cti ConfirmingTxInfo
+	cti.ChannelID = td.ChannelID
+	cti.ID = int64ToString(td.CrossTxID)
+	if td.TxStatus == constant.TxStatusFromCreated {
+		cti.TxID = td.FromTxID
+		cti.isOfflineTx = true
+	} else {
+		cti.TxID = td.ToTxID
+		cti.isOfflineTx = false
+	}
+	return cti
+}
+
 func int64ToString(i int64) string {
 	return strconv.FormatInt(i, 10)
 }
@@ -302,36 +329,47 @@ func stringToInt64(s string) (int64, error) {
 	return strconv.ParseInt(s, 10, 64)
 }
 
-func getCrossTxDetailAndTxDetailByFromTxID(cidStr string, txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
-	cid, err := stringToInt64(cidStr)
-	if err != nil {
-		return nil, nil, errors.New("cid 异常")
-	}
-	//1.查询跨链交易和需要绑定的交易
-	ctd, err := model.GetCrossTxDetailByID(cid)
+func getCrossTxDetailAndTxDetailByFromTxID(txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
+	td, err := model.GetTxDetailByFromTxID(txID)
 	if err != nil {
 		return nil, nil, err
 	}
-	td, err := model.GetCrossTxByFromTxID(txID, cid)
+	//1.查询跨链交易和需要绑定的交易
+	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
+	if err != nil {
+		return nil, nil, err
+	}
 	return ctd, td, err
 }
 
-func getCrossTxDetailAndTxDetailByToTxID(cidStr string, txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
-	cid, err := stringToInt64(cidStr)
-	if err != nil {
-		return nil, nil, errors.New("cid 异常")
-	}
-	//1.查询跨链交易和需要绑定的交易
-	ctd, err := model.GetCrossTxDetailByID(cid)
+func getCrossTxDetailAndTxDetailByToTxID(txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
+	td, err := model.GetTxDetailByToTxID(txID)
 	if err != nil {
 		return nil, nil, err
 	}
-	td, err := model.GetCrossTxByToTxID(txID, cid)
+	//1.查询跨链交易和需要绑定的交易
+	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return ctd, td, err
+}
+
+func getCrossTxDetailAndTxDetailByTxID(txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
+	td, err := model.GetTxDetailByTxID(txID)
+	if err != nil {
+		return nil, nil, err
+	}
+	//1.查询跨链交易和需要绑定的交易
+	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
+	if err != nil {
+		return nil, nil, err
+	}
 	return ctd, td, err
 }
 
 func validateEnableCompleteTransferFromTx(ctd *model.CrossTxDetail, td *model.TxDetail) error {
-	if td.TxStatus != constant.TxStatusToCreated || ctd.Status != constant.StatusCreated {
+	if td.TxStatus != constant.TxStatusFromCreated || ctd.Status != constant.StatusCreated {
 		return errors.New("当前交易不能代理转账")
 	}
 	return nil
@@ -349,4 +387,62 @@ func validateEnableCompleteTransferToTx(ctd *model.CrossTxDetail, td *model.TxDe
 		return errors.New("当前交易不能代理转账")
 	}
 	return nil
+}
+
+func completeTransferFromTx(td *model.TxDetail, ctd *model.CrossTxDetail, txID string) error {
+	//2.校验需要完成的交易状态
+	if td.TxStatus != constant.TxStatusFromCreated {
+		return errors.New("当前交易不能完成")
+	}
+	if err := ctd.ValidateHostingStatus(); err != nil {
+		return err
+	}
+	//3.开启事务完成交易
+	tx, err := model.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+
+	if err = td.CompleteTransferFromTx(tx); err != nil {
+		return err
+	}
+	if err = ctd.CompleteTransferFromTx(txID, td.Type, tx); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+func completeTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID string) error {
+	if err := validateEnableCompleteTransferToTx(ctd, td); err != nil {
+		return err
+	}
+
+	//开启事务完成交易
+	tx, err := model.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+
+	if err = td.CompleteTransferToTx(tx); err != nil {
+		return err
+	}
+
+	if err = ctd.CompleteTransferToTx(txID, td.Type, tx); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func rollbackTx(tx *sqlx.Tx) {
+	if err := tx.Rollback(); err != nil {
+		log.Printf("unable to rollback: %v", err)
+	}
 }

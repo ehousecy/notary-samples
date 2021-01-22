@@ -101,7 +101,6 @@ func ListenTxID(ccp contextApi.ChannelProvider, txID fab.TransactionID) {
 			} else if e.TxValidationCode != pb.TxValidationCode_VALID {
 				log.Fatalf("expecting TxValidationCode [%v] but received [%v]", pb.TxValidationCode_VALID, e.TxValidationCode)
 			}
-			//交易验证成功：todo
 			log.Printf("交易成功，txID: %v", txID)
 		}
 	}

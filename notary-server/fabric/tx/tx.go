@@ -2,11 +2,11 @@ package tx
 
 import (
 	"fmt"
-	"github.com/ehousecy/notary-samples/notary-server/constant"
+	"github.com/ehousecy/notary-samples/notary-server/db/constant"
+	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/client"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/sdkutil"
-	"github.com/ehousecy/notary-samples/notary-server/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -19,6 +19,7 @@ type Handler interface {
 	HandleLocalTx(ticketId string) error
 	HandleTxStatusBlock(channelID string, fb *peer.FilteredBlock)
 	ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) error
+	QueryLastFabricBlockNumber(channelID string) (uint64, error)
 }
 
 var confirmingTxIDMap = make(map[string]map[string]txInfo, 8)
@@ -31,11 +32,15 @@ type txInfo struct {
 
 type txHandler struct {
 	db           services.CrossTxDataService
+	bl           services.FabricBlockLogService
 	ticketIDChan chan string
 }
 
 func New() *txHandler {
-	return &txHandler{db: services.NewCrossTxDataServiceProvider(), ticketIDChan: make(chan string, 1)}
+	//todo: 查询待确认交易列表
+	return &txHandler{db: services.NewCrossTxDataServiceProvider(),
+		bl:           services.NewFabricBlockLogServiceProvider(),
+		ticketIDChan: make(chan string, 1)}
 }
 
 func (th *txHandler) HandleOfflineTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
@@ -155,14 +160,14 @@ func (th *txHandler) HandleLocalTx(ticketId string) error {
 	}
 
 	//验证是否能交易
-	if err = th.db.ValidateEnableBoundTransferToTx(ticketId, crossTxInfo.FabricTx.FromTxID); err != nil {
+	if err = th.db.ValidateEnableBoundTransferToTx(crossTxInfo.FabricTx.FromTxID); err != nil {
 		return err
 	}
 	txID, signedEnvelope, err := c.CreateTransaction(*request)
 	if err != nil {
 		return err
 	}
-	if err = th.db.BoundTransferToTx(ticketId, crossTxInfo.FabricTx.FromTxID, txID); err != nil {
+	if err = th.db.BoundTransferToTx(crossTxInfo.FabricTx.FromTxID, txID); err != nil {
 		return err
 	}
 
@@ -182,7 +187,8 @@ func (th *txHandler) HandleTxStatusBlock(channelID string, fb *peer.FilteredBloc
 	for _, ft := range fb.FilteredTransactions {
 		th.handleTx(channelID, ft)
 	}
-
+	//记录处理的区块
+	th.bl.AddFabricBlockLog(fb.Number, channelID)
 }
 
 func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
@@ -201,11 +207,11 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 		return
 	}
 
+	err := th.db.CompleteTransferTx(ft.Txid)
+	if err != nil {
+		return
+	}
 	if info.isOfflineTx {
-		err := th.db.CompleteTransferFromTx(info.ticketId, ft.Txid)
-		if err != nil {
-			return
-		}
 		crossTxInfo, err := th.db.QueryCrossTxInfoByCID(info.ticketId)
 		if err != nil {
 			return
@@ -213,11 +219,6 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 		if crossTxInfo.Status == constant.StatusHosted {
 			//todo:失败处理
 			th.HandleLocalTx(info.ticketId)
-		}
-	} else {
-		err := th.db.CompleteTransferToTx(info.ticketId, ft.Txid)
-		if err != nil {
-			return
 		}
 	}
 
@@ -234,4 +235,9 @@ func (th *txHandler) ValidateEnableSupport(channelID, chaincodeName, assetType, 
 		return fmt.Errorf("the specified fabric transaction is not supported, "+
 			"channelID=%s,chaincodeID=%s,asset=%s", channelID, chaincodeName, asset)
 	}
+	return nil
+}
+
+func (th *txHandler) QueryLastFabricBlockNumber(channelID string) (uint64, error) {
+	return th.bl.QueryLastFabricBlockNumber(channelID)
 }

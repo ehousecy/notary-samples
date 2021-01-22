@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/eth"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
-	"github.com/ehousecy/notary-samples/notary-server/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/go-playground/validator/v10"
 	"log"
