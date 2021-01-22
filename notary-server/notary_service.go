@@ -30,14 +30,11 @@ type TxExecResult struct {
 }
 
 type TxHandler interface {
-	ValidateTx([]byte, string) bool
-	SendTx(txData []byte)
 	BuildTx(args ...string) []byte
-	SignTx(priv string, ticketId string) []byte
+	SignAndSendTx([]byte) error
+	Approve(ticketID string) error
 	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer) error
 }
-
-
 
 func NewNotaryService() *NotaryService {
 	validate = validator.New()

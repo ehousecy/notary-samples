@@ -35,9 +35,6 @@ func TestDecodeBytes(t *testing.T) {
 	})
 }
 
-func TestContext(t *testing.T) {
-
-}
 
 func constructTx() *types.Transaction {
 	randPriv := fmt.Sprintf("%x", generatePrivKey())
