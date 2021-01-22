@@ -11,14 +11,19 @@ import (
 )
 
 type FabricMonitor struct {
-	th tx.Handler
+	th         tx.Handler
+	channelIDs []string
+}
+
+func New(th tx.Handler) *FabricMonitor {
+	var fm = &FabricMonitor{th: th, channelIDs: business.New().GetSupportChannels()}
+	return fm
 }
 
 func (fm *FabricMonitor) Start() {
 	//todo:开始监听前,确保监听的交易id写入map
-	channelIDs := business.Support.GetSupportChannels()
 	//1.开启区块监听
-	fm.BlockEventsMonitor(channelIDs)
+	fm.BlockEventsMonitor(fm.channelIDs)
 }
 
 func (fm *FabricMonitor) BlockEventsMonitor(channelIDs []string) {

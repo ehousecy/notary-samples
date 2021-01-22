@@ -34,13 +34,16 @@ type txHandler struct {
 	db           services.CrossTxDataService
 	bl           services.FabricBlockLogService
 	ticketIDChan chan string
+	bs           business.Support
 }
 
 func New() *txHandler {
 	//todo: 查询待确认交易列表
-	return &txHandler{db: services.NewCrossTxDataServiceProvider(),
+	handler := txHandler{db: services.NewCrossTxDataServiceProvider(),
 		bl:           services.NewFabricBlockLogServiceProvider(),
+		bs:           business.New(),
 		ticketIDChan: make(chan string, 1)}
+	return &handler
 }
 
 func (th *txHandler) HandleOfflineTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
@@ -49,7 +52,7 @@ func (th *txHandler) HandleOfflineTx(srv pb.NotaryService_SubmitTxServer, recv *
 	if err != nil {
 		return err
 	}
-	request, err := business.Support.CreateFromRequest(crossTxInfo.FabricChannel, business.RequestParams{
+	request, err := th.bs.CreateFromRequest(crossTxInfo.FabricChannel, business.RequestParams{
 		ChaincodeName: crossTxInfo.FabricChaincode,
 		Asset:         crossTxInfo.FabricAmount,
 		From:          crossTxInfo.FabricFrom,
@@ -145,7 +148,7 @@ func (th *txHandler) HandleLocalTx(ticketId string) error {
 	if err != nil {
 		return err
 	}
-	request, err := business.Support.CreateToRequest(crossTxInfo.FabricChannel, business.RequestParams{
+	request, err := th.bs.CreateToRequest(crossTxInfo.FabricChannel, business.RequestParams{
 		ChaincodeName: crossTxInfo.FabricChaincode,
 		Asset:         crossTxInfo.FabricAmount,
 		To:            crossTxInfo.FabricTo,
