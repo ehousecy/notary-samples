@@ -50,7 +50,7 @@ type CrossTxDataService interface {
 	CreateTransferFromTx(cid string, txID string, txType string) error
 	ValidateEnableCompleteTransferFromTx(txID string) error
 	CompleteTransferFromTx(txID string) error
-	ValidateEnableBoundTransferToTx(boundTxID string) error
+	ValidateEnableBoundTransferToTx(boundTxID string, cIDChan chan string) error
 	BoundTransferToTx(boundTxID, txID string) error
 	ValidateEnableCompleteTransferToTx(txID string) error
 	CompleteTransferToTx(txID string) error

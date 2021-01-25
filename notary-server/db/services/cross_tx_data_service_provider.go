@@ -93,12 +93,15 @@ func (cts CrossTxDataServiceProvider) CompleteTransferFromTx(txID string) error 
 	return nil
 }
 
-func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(boundTxID string) error {
+func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(boundTxID string, cIDChan chan string) error {
 	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(boundTxID)
 	if err != nil {
 		return err
 	}
-	return validateEnableBoundTransferToTx(ctd, td)
+	if err = validateEnableBoundTransferToTx(ctd, td); err == nil && cIDChan != nil {
+		cIDChan <- int64ToString(ctd.ID)
+	}
+	return err
 }
 
 func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) error {
