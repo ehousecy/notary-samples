@@ -8,22 +8,23 @@ import (
 	"sync"
 )
 
-func init() {
-	once.Do(func() {
-		Support = support{businessMap: make(map[string]Business)}
-		Support.Register(impl.BasicBusiness{})
-	})
-}
-
 //定义business support全局实例
-var Support support
+var support Support
 var once sync.Once
 
-type support struct {
+type Support struct {
 	businessMap map[string]Business
 }
 
-func (s support) Register(b Business) {
+func New() Support {
+	once.Do(func() {
+		support = Support{businessMap: make(map[string]Business)}
+		support.register(impl.BasicBusiness{})
+	})
+	return support
+}
+
+func (s Support) register(b Business) {
 	channelID := b.GetChannelID()
 	if channelID == "" {
 		panic("register channel business impl fail")
@@ -31,7 +32,7 @@ func (s support) Register(b Business) {
 	s.businessMap[channelID] = b
 }
 
-func (s support) GetSupportChannels() []string {
+func (s Support) GetSupportChannels() []string {
 	keys := make([]string, 0, len(s.businessMap))
 	for k := range s.businessMap {
 		keys = append(keys, k)
@@ -39,7 +40,7 @@ func (s support) GetSupportChannels() []string {
 	return keys
 }
 
-func (s support) InitSDK(channelID string) (*fabsdk.FabricSDK, error) {
+func (s Support) InitSDK(channelID string) (*fabsdk.FabricSDK, error) {
 	business, err := s.getBusiness(channelID)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (s support) InitSDK(channelID string) (*fabsdk.FabricSDK, error) {
 	return business.InitSDK()
 }
 
-func (s support) GetContextOptions(channelID string) ([]fabsdk.ContextOption, error) {
+func (s Support) GetContextOptions(channelID string) ([]fabsdk.ContextOption, error) {
 	business, err := s.getBusiness(channelID)
 	if err != nil {
 		return nil, err
@@ -63,21 +64,21 @@ type RequestParams struct {
 	To            string
 }
 
-func (s support) CreateFromRequest(channelID string, rp RequestParams) (*channel.Request, error) {
+func (s Support) CreateFromRequest(channelID string, rp RequestParams) (*channel.Request, error) {
 	business, err := s.getBusiness(channelID)
 	if err != nil {
 		return nil, err
 	}
 	return business.CreateFromRequest(rp.ChaincodeName, rp.AssetType, rp.Asset, rp.From)
 }
-func (s support) CreateToRequest(channelID string, rp RequestParams) (*channel.Request, error) {
+func (s Support) CreateToRequest(channelID string, rp RequestParams) (*channel.Request, error) {
 	business, err := s.getBusiness(channelID)
 	if err != nil {
 		return nil, err
 	}
 	return business.CreateToRequest(rp.ChaincodeName, rp.AssetType, rp.Asset, rp.To)
 }
-func (s support) ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) (bool, error) {
+func (s Support) ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) (bool, error) {
 	business, err := s.getBusiness(channelID)
 	if err != nil {
 		return false, err
@@ -85,7 +86,7 @@ func (s support) ValidateEnableSupport(channelID, chaincodeName, assetType, asse
 	return business.ValidateEnableSupport(chaincodeName, assetType, asset)
 }
 
-func (s support) getBusiness(channelID string) (Business, error) {
+func (s Support) getBusiness(channelID string) (Business, error) {
 	b, ok := s.businessMap[channelID]
 	if !ok {
 		return nil, fmt.Errorf("the specified channel is not supported, channelID=%v", channelID)

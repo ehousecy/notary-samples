@@ -11,7 +11,7 @@ type BasicBusiness struct {
 }
 
 func (b BasicBusiness) InitSDK() (*fabsdk.FabricSDK, error) {
-	ccpPath := filepath.Join("config.yaml")
+	ccpPath := filepath.Join("./config.yaml")
 	return fabsdk.New(config.FromFile(filepath.Clean(ccpPath)))
 }
 func (b BasicBusiness) GetContextOptions() ([]fabsdk.ContextOption, error) {

@@ -12,16 +12,10 @@ import (
 
 var validate *validator.Validate
 
-// handler names in the service system
-const (
-	ETHHandler = "ETHHandler"
-	FabricHandler = "FabricHandler"
-)
-
 type NotaryService struct {
 	provider services.CrossTxDataService
 	fh       tx.Handler
-	handlers map[string]TxHandler
+	handlers map[pb.TransferPropertyRequest_NetworkType]TxHandler
 }
 
 type TxExecResult struct {
@@ -31,40 +25,36 @@ type TxExecResult struct {
 
 type TxHandler interface {
 	Approve(ticketID string) error // notary admin op interface
-	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer) error
+	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
 }
 
 func NewNotaryService() *NotaryService {
 	validate = validator.New()
-	n :=  &NotaryService{
+	n := &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
 		fh:       tx.New(),
 	}
-	n.AddHandler(ETHHandler, eth.NewEthHandler("todo"))
+	n.AddHandler(pb.TransferPropertyRequest_eth, eth.NewEthHandler("todo"))
+	n.AddHandler(pb.TransferPropertyRequest_fabric, n.fh)
 	return n
 }
 
-func (n *NotaryService)AddHandler(handlerName string, handler TxHandler) *NotaryService {
-	_, exist := n.handlers[handlerName]
-	if exist{
-		log.Printf("[Warning] handler already exist, updating handler %s\n", handlerName)
+func (n *NotaryService) AddHandler(t pb.TransferPropertyRequest_NetworkType, handler TxHandler) *NotaryService {
+	_, exist := n.handlers[t]
+	if exist {
+		log.Printf("[Warning] handler already exist, updating handler %v\n", t.String())
 	}
-
-	n.handlers[handlerName] = handler
+	n.handlers[t] = handler
 	return n
 }
 
-func (n *NotaryService)GetHandler(code pb.TransferPropertyRequest_NetworkType) TxHandler  {
-	switch code {
-	case pb.TransferPropertyRequest_fabric:
-		return n.handlers[FabricHandler]
-	case pb.TransferPropertyRequest_eth:
-		return n.handlers[ETHHandler]
-	default:
-		log.Printf("[Waring] Unkonw transaction type %d\n", code)
+func (n *NotaryService) GetHandler(code pb.TransferPropertyRequest_NetworkType) TxHandler {
+	handler, ok := n.handlers[code]
+	if !ok {
+		log.Printf("[Waring] Unkonw transaction type %v\n", code)
 		return nil
 	}
-
+	return handler
 }
 
 func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) (*pb.CreateCrossTxResp, error) {
@@ -89,7 +79,7 @@ func (n *NotaryService) SubmitTx(srv pb.NotaryService_SubmitTxServer) error {
 		return err
 	}
 	handler := n.GetHandler(recv.NetworkType)
-	return handler.ConstructAndSignTx(srv)
+	return handler.ConstructAndSignTx(srv, recv)
 }
 
 func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.ListTxResponse, error) {
@@ -122,11 +112,11 @@ func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (
 	ticketId := in.CTxTicketId
 	switch in.Op {
 	case pb.TicketOps_approve:
-		 err := n.approveCtx(ticketId)
-		 pbErr :=&pb.Error{
-		 	Code: -1,
-		 	ErrMsg: err.Error(),
-		 }
+		err := n.approveCtx(ticketId)
+		pbErr := &pb.Error{
+			Code:   -1,
+			ErrMsg: err.Error(),
+		}
 		return &pb.AdminOpTicketResp{
 			Err: pbErr,
 		}, nil
@@ -147,8 +137,8 @@ func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (
 	}, nil
 }
 
-func (n *NotaryService)approveCtx(ticketId string) error {
-	for _, handler := range n.handlers{
+func (n *NotaryService) approveCtx(ticketId string) error {
+	for _, handler := range n.handlers {
 		err := handler.Approve(ticketId)
 		if err != nil {
 			return err
@@ -156,7 +146,6 @@ func (n *NotaryService)approveCtx(ticketId string) error {
 	}
 	return nil
 }
-
 
 func covertCreateCrossTxReq(req *pb.CreateCrossTxReq) (services.CrossTxBase, error) {
 	detail := req.Detail
