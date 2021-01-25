@@ -30,9 +30,7 @@ type TxExecResult struct {
 }
 
 type TxHandler interface {
-	BuildTx(args ...string) []byte
-	SignAndSendTx([]byte) error
-	Approve(ticketID string) error
+	Approve(ticketID string) error // notary admin op interface
 	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer) error
 }
 
@@ -121,10 +119,44 @@ func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*
 }
 
 func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (*pb.AdminOpTicketResp, error) {
-	return &pb.AdminOpTicketResp{
+	ticketId := in.CTxTicketId
+	switch in.Op {
+	case pb.TicketOps_approve:
+		 err := n.approveCtx(ticketId)
+		 pbErr :=&pb.Error{
+		 	Code: -1,
+		 	ErrMsg: err.Error(),
+		 }
+		return &pb.AdminOpTicketResp{
+			Err: pbErr,
+		}, nil
+	case pb.TicketOps_reject:
+		log.Printf("Reject cross transaction, ticket-id: %s\n", ticketId)
+		return &pb.AdminOpTicketResp{
+			Err: nil,
+		}, nil
+	case pb.TicketOps_quite:
+		log.Printf("Quite cross transaction, ticket-id: %s\n", ticketId)
+		return &pb.AdminOpTicketResp{
+			Err: nil,
+		}, nil
 
+	}
+	return &pb.AdminOpTicketResp{
+		Err: nil,
 	}, nil
 }
+
+func (n *NotaryService)approveCtx(ticketId string) error {
+	for _, handler := range n.handlers{
+		err := handler.Approve(ticketId)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 
 func covertCreateCrossTxReq(req *pb.CreateCrossTxReq) (services.CrossTxBase, error) {
 	detail := req.Detail

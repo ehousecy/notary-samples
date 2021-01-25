@@ -2,12 +2,21 @@ package cmd
 
 import (
 	"context"
+
 	"github.com/ehousecy/notary-samples/cli/fabutil"
 	"github.com/ehousecy/notary-samples/cli/grpc"
 	"github.com/ehousecy/notary-samples/proto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
+
+	"errors"
+	"fmt"
+	pb "github.com/ehousecy/notary-samples/proto"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
+	"math/big"
 )
 
 // this file implement the folowing cmd
@@ -22,8 +31,12 @@ const (
 	subTicketKey  = "subTicketKey"
 	subPrivKey    = "subPrivKey"
 	subNetworkKey = "subNetworkKey"
-	subCertKey    = "subCertKey"
-	subMSPKey     = "subMSPKey"
+
+	subCertKey = "subCertKey"
+	subMSPKey  = "subMSPKey"
+
+	ETHType    = "ethereum"
+	FabricType = "fabric"
 )
 
 func init() {
@@ -41,27 +54,50 @@ func init() {
 
 // get notary service details according the target ticket id, construct raw transaction and sign
 func execSubmitCmd(cmd *cobra.Command, args []string) {
+
 	ticketID := viper.GetString(subTicketKey)
 	privateKey := viper.GetString(subPrivKey)
 	network := viper.GetString(subNetworkKey)
-	if network == "fabric" {
-		signCert := viper.GetString(subCertKey)
-		mspID := viper.GetString(subMSPKey)
-		if signCert == "" {
-			log.Fatalf("submit fabric tx %s is necessary", signCertOption)
+	if network == FabricType {
+		execFabricSubmit(ticketID, privateKey)
+	} else {
+		client := grpc.NewClient()
+		stream, err := client.SubmitTx(context.Background(), nil)
+		if err != nil {
+			log.Printf("Submit transaction failed, %v\n", err)
+			return
 		}
-		if mspID == "" {
-			log.Fatalf("submit fabric tx %s is necessary", mspIDOption)
+		txType := viper.GetString(subNetworkKey)
+		builder := NewTxBuilder(txType)
+		if builder == nil {
+			log.Printf("Unrecoganised transaction type, %v\n", err)
+			return
 		}
-		execFabricSubmit(ticketID, privateKey, signCert, mspID)
+		err = builder.BuildTx(ticketID, privateKey, stream)
+		if err != nil {
+			log.Printf("Build transaction failed, %v\n", err)
+			return
+		}
 	}
 
+}
+
+type TxBuilder interface {
+	BuildTx(ticketId, priv string, stream pb.NotaryService_SubmitTxClient) error
 }
 
 //todo
 // construct raw transaction for the user, display the info and let user sign tx data
 
-func execFabricSubmit(ticketID, privateKeyPath, signCert, mspID string) {
+func execFabricSubmit(ticketID, privateKeyPath string) {
+	signCert := viper.GetString(subCertKey)
+	mspID := viper.GetString(subMSPKey)
+	if signCert == "" {
+		log.Fatalf("submit fabric tx %s is necessary", signCertOption)
+	}
+	if mspID == "" {
+		log.Fatalf("submit fabric tx %s is necessary", mspIDOption)
+	}
 	client := grpc.NewClient()
 	srv, err := client.SubmitTx(context.Background())
 	exitErr(err)
@@ -93,4 +129,71 @@ func execFabricSubmit(ticketID, privateKeyPath, signCert, mspID string) {
 	exitErr(err)
 	log.Println("end transfer FabricSubmitTx method=====================")
 
+}
+
+func NewTxBuilder(txType string) TxBuilder {
+	switch txType {
+	case ETHType:
+		e := &EthBuilder{}
+		return e
+	default:
+		return nil
+	}
+}
+
+type EthBuilder struct {
+}
+
+func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_SubmitTxClient) error {
+	err := stream.Send(&pb.TransferPropertyRequest{
+		CTxId:       ticketId,
+		NetworkType: pb.TransferPropertyRequest_eth,
+	})
+	if err != nil {
+		return err
+	}
+	src, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
+	// validate received stream
+	if src.Error != nil {
+		return errors.New(src.Error.ErrMsg)
+	}
+	txRawData := src.TxData
+	tx := decodeTx(txRawData)
+	if tx == nil {
+		errMsg := fmt.Sprintf("Invalid transaction data：[%x]", txRawData)
+		return errors.New(errMsg)
+	}
+	privKey, err := crypto.HexToECDSA(priv)
+	if err != nil {
+		return errors.New("Invalid private key ")
+	}
+	chainId := new(big.Int).SetUint64(1)
+	signed, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privKey)
+	if err != nil {
+		return err
+	}
+
+	signedBytes, err := rlp.EncodeToBytes(signed)
+	if err != nil {
+		return err
+	}
+	err = stream.Send(&pb.TransferPropertyRequest{
+		Data: signedBytes,
+	})
+	return err
+}
+
+//helper functions here
+
+// decode ethereum transaction
+func decodeTx(tx []byte) *types.Transaction {
+	var decoded *types.Transaction
+	if err := rlp.DecodeBytes(tx, &decoded); err != nil {
+		return nil
+	}
+	return decoded
 }

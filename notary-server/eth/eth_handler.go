@@ -20,10 +20,13 @@ const (
 	NotaryAddress = "0x71BE5a9044F3E41c74b7c25AA19B528dd6B9f387"
 )
 
+var (
+	provider = services.NewCrossTxDataServiceProvider()
+)
+
 type EthHanlder struct {
 	client  *ethclient.Client //https rpc
 	monitor *EthMonitor
-	// todo configure monitor from file
 }
 
 // create a ethereum handler with endpoint url
@@ -37,11 +40,12 @@ func NewEthHandler(url string) *EthHanlder {
 		client:  c,
 		monitor: NewMonitor(url),
 	}
-	handler.monitor.Start()
 	handler.loop()
+	handler.monitor.Start()
 	return handler
 }
 
+// loop event and confirm transaction
 func (e *EthHanlder)loop()  {
 	events := make(chan txConfirmEvent, 100)
 	e.monitor.Subscribe(events)
@@ -49,8 +53,12 @@ func (e *EthHanlder)loop()  {
 		for{
 			select {
 			case txEvent := <- events:
-				//
-				_ = txEvent
+				err := e.ConfirmTx(txEvent.txid)
+				if err != nil {
+					EthLogPrintf("Confirm Tx error, %v", err)
+				}
+			default:
+
 			}
 		}
 	}(events)
@@ -85,7 +93,7 @@ func (e *EthHanlder) BuildTx(args ...string) ([]byte) {
 }
 
 // sign transaction and send out to the network, record transaction id locally
-func (e *EthHanlder)SignAndSendTx(rawData []byte) error  {
+func (e *EthHanlder)SignAndSendTx(ticketId string, rawData []byte) error  {
 	priv := "478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb"
 	privKey, err := crypto.HexToECDSA(priv)
 	if err != nil {
@@ -110,13 +118,11 @@ func (e *EthHanlder)SignAndSendTx(rawData []byte) error  {
 		EthLogPrintf("Failed sign transaction, %v", err)
 		return err
 	}
-	err = e.client.SendTransaction(context.Background(), signed)
+	signedByte, err := rlp.EncodeToBytes(signed)
 	if err != nil {
 		return err
 	}
-
-	//  record transaction id in monitor
-	return e.monitor.AddTxRecord(signed.Hash().String())
+	return e.sendTx(ticketId, signedByte)
 }
 
 // construct and sign transactions for user
@@ -155,14 +161,7 @@ func (e *EthHanlder)ConstructAndSignTx(src pb.NotaryService_SubmitTxServer) erro
 	signedTx := signed.Data
 
 	if !validateWithOrign(rawTx, signedTx){
-		txSent := decodeTx(signedTx)
-		err = e.client.SendTransaction(context.Background(), txSent)
-		if err != nil {
-			return err
-		}
-		txHash := txSent.Hash().String()
-		provider.CreateTransferFromTx(ticketId, txHash, constant.TypeEthereum)
-		return e.monitor.AddTxRecord(txHash)
+		return e.sendTx(ticketId, signedTx)
 	}else {
 		return errors.New("transaction does not Match! ")
 	}
@@ -171,15 +170,25 @@ func (e *EthHanlder)ConstructAndSignTx(src pb.NotaryService_SubmitTxServer) erro
 // approve a cross transaction
 
 func (e *EthHanlder)Approve(ticketId string) error  {
-	provider := services.NewCrossTxDataServiceProvider()
+
 	ticketInfo, err := provider.QueryCrossTxInfoByCID(ticketId)
 	if err != nil {
 		return err
 	}
 
 	rawTx := e.BuildTx(NotaryAddress, ticketInfo.EthTo, ticketInfo.EthAmount)
-	err = e.SignAndSendTx(rawTx)
+	err = e.SignAndSendTx(ticketId, rawTx)
 	return nil
+}
+
+// handle confirm tx event
+func (e *EthHanlder)ConfirmTx(txHash string) error {
+	err := provider.CompleteTransferTx(txHash)
+	if err != nil {
+		return err
+	}
+	key := []byte(txHash)
+	return e.monitor.DBInterface.Delete(key, nil)
 }
 
 // helper functions
@@ -249,6 +258,19 @@ func (e *EthHanlder) signTx(priv string, tx *types.Transaction) *types.Transacti
 		return nil
 	}
 	return signed
+}
+
+// send transaction
+func (e *EthHanlder)sendTx(ticketId string, signed []byte) error {
+
+	tx := decodeTx(signed)
+	err := e.client.SendTransaction(context.Background(), tx)
+	if err != nil {
+		return err
+	}
+	txHash := tx.Hash().String()
+	provider.CreateTransferFromTx(ticketId, txHash, constant.TypeEthereum)
+	return e.monitor.AddTxRecord(txHash)
 }
 
 // validate private key and derive public key
