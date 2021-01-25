@@ -27,6 +27,8 @@ const (
 	ticketIdOption    = "ticket-id"
 	privateKeyOption  = "private-key"
 	networkTypeOption = "network-type"
+	signCertOption    = "sign-cert"
+	mspIDOption       = "msp-id"
 )
 
 // option description or command description
@@ -39,6 +41,8 @@ const (
 	ticketDescription     = "Notary service created cross transaction ticket id"
 	privateKeyDescription = "Private key used to sign the transaction, should match with the cross transaction ticket related public key"
 	networkDescription    = "On which blockchain network this transaction is sending to, ie. ethereum, fabric, btc"
+	signCertDescription   = "Sign cert provide truly public key verification signature, fabric is necessary"
+	mspIDDescription      = "fabric MSP ID"
 )
 const (
 	required = true
