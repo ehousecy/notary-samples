@@ -15,8 +15,8 @@ import (
 )
 
 type Handler interface {
-	HandleOfflineTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
-	HandleLocalTx(ticketId string) error
+	ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
+	Approve(ticketId string) error
 	HandleTxStatusBlock(channelID string, fb *peer.FilteredBlock)
 	ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) error
 	QueryLastFabricBlockNumber(channelID string) (uint64, error)
@@ -46,7 +46,7 @@ func New() *txHandler {
 	return &handler
 }
 
-func (th *txHandler) HandleOfflineTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
+func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
 	//通过ticketId查询跨链交易信息
 	crossTxInfo, err := th.db.QueryCrossTxInfoByCID(recv.CTxId)
 	if err != nil {
@@ -141,7 +141,7 @@ func putTxID(channelID, txID string, ti txInfo) {
 	txMap[txID] = ti
 }
 
-func (th *txHandler) HandleLocalTx(ticketId string) error {
+func (th *txHandler) Approve(ticketId string) error {
 
 	//通过ticketId查询跨链交易信息
 	crossTxInfo, err := th.db.QueryCrossTxInfoByCID(ticketId)
