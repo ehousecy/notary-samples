@@ -1,9 +1,9 @@
 package monitor
 
 import (
+	"github.com/ehousecy/notary-samples/notary-server/fabric"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/client"
-	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
@@ -11,17 +11,20 @@ import (
 )
 
 type FabricMonitor struct {
-	th         tx.Handler
+	th         fabric.Handler
 	channelIDs []string
 }
 
-func New(th tx.Handler) *FabricMonitor {
+func New(th fabric.Handler) *FabricMonitor {
 	var fm = &FabricMonitor{th: th, channelIDs: business.New().GetSupportChannels()}
 	return fm
 }
 
 func (fm *FabricMonitor) Start() {
-	//todo:开始监听前,确保监听的交易id写入map
+	err := fm.th.QueryConfirmingTx()
+	if err != nil {
+		panic(err)
+	}
 	//1.开启区块监听
 	fm.BlockEventsMonitor(fm.channelIDs)
 }

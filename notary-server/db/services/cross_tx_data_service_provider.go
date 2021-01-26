@@ -335,10 +335,10 @@ func convert2ConfirmingTxInfo(td *model.TxDetail) ConfirmingTxInfo {
 	cti.ID = int64ToString(td.CrossTxID)
 	if td.TxStatus == constant.TxStatusFromCreated {
 		cti.TxID = td.FromTxID
-		cti.isOfflineTx = true
+		cti.IsOfflineTx = true
 	} else {
 		cti.TxID = td.ToTxID
-		cti.isOfflineTx = false
+		cti.IsOfflineTx = false
 	}
 	return cti
 }

@@ -6,21 +6,15 @@ import (
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/client"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/monitor"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/sdkutil"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
+	"sync"
 )
-
-type Handler interface {
-	ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
-	Approve(ticketId string) error
-	HandleTxStatusBlock(channelID string, fb *peer.FilteredBlock)
-	ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) error
-	QueryLastFabricBlockNumber(channelID string) (uint64, error)
-}
 
 var confirmingTxIDMap = make(map[string]map[string]txInfo, 8)
 var ticketIDMap = make(map[string]bool, 8)
@@ -37,13 +31,21 @@ type txHandler struct {
 	bs           business.Support
 }
 
-func New() *txHandler {
+var txHandlerInstance *txHandler
+var once sync.Once
+
+func NewFabricHandler() *txHandler {
 	//todo: 查询待确认交易列表
-	handler := txHandler{db: services.NewCrossTxDataServiceProvider(),
-		bl:           services.NewFabricBlockLogServiceProvider(),
-		bs:           business.New(),
-		ticketIDChan: make(chan string, 1)}
-	return &handler
+	once.Do(func() {
+		handler := txHandler{db: services.NewCrossTxDataServiceProvider(),
+			bl:           services.NewFabricBlockLogServiceProvider(),
+			bs:           business.New(),
+			ticketIDChan: make(chan string, 1)}
+		//开启fabric区块监听
+		monitor.New(&handler).Start()
+		txHandlerInstance = &handler
+	})
+	return txHandlerInstance
 }
 
 func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
@@ -242,4 +244,15 @@ func (th *txHandler) ValidateEnableSupport(channelID, chaincodeName, assetType, 
 
 func (th *txHandler) QueryLastFabricBlockNumber(channelID string) (uint64, error) {
 	return th.bl.QueryLastFabricBlockNumber(channelID)
+}
+
+func (th *txHandler) QueryConfirmingTx() error {
+	ctis, err := th.db.QueryConfirmingTxInfo(constant.TypeFabric)
+	if err != nil {
+		return err
+	}
+	for _, cti := range ctis {
+		putTxID(cti.ChannelID, cti.TxID, txInfo{isOfflineTx: cti.IsOfflineTx, ticketId: cti.ID})
+	}
+	return nil
 }

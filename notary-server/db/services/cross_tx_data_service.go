@@ -41,7 +41,7 @@ type CrossTxInfo struct {
 type ConfirmingTxInfo struct {
 	ID          string
 	TxID        string
-	isOfflineTx bool
+	IsOfflineTx bool
 	ChannelID   string
 }
 
