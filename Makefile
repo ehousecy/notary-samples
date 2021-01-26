@@ -18,17 +18,13 @@ build:
 
 # install necessary binaries
 install:
-	@echo "Installing server and client "
-	@go install github.com/ehousecy/notary-samples/
-	@go install github.com/ehousecy/notary-samples/cli
-	@echo "server and client are successfully installed"
-	@echo "Installing geth and fabric"
-	@go get github.com/ethereum/go-ethereum/tree/master/cmd/geth
-	@echo "Installing Fabric v2.2"
-	@curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.2.1 1.4.9
+	@./scripts/download-binaries.sh
+	@echo "finished install binaries"
 
 # install geth and start with a specified account
 start:
-	@./start.sh
+	@cd scripts && exec ./start-node.sh
 
+stop:
+	@cd scripts && exec ./stop-node.sh
 

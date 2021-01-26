@@ -86,9 +86,6 @@ type TxBuilder interface {
 	BuildTx(ticketId, priv string, stream pb.NotaryService_SubmitTxClient) error
 }
 
-//todo
-// construct raw transaction for the user, display the info and let user sign tx data
-
 func execFabricSubmit(ticketID, privateKeyPath string) {
 	signCert := viper.GetString(subCertKey)
 	mspID := viper.GetString(subMSPKey)
