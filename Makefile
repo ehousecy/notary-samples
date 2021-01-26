@@ -28,8 +28,3 @@ start:
 stop:
 	@cd scripts && exec ./stop-node.sh
 
-clean:
-	@pkill geth
-	@rm ~/.ethereum/ -rf
-
-
