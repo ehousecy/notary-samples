@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/eth"
+	"github.com/ehousecy/notary-samples/notary-server/fabric"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/go-playground/validator/v10"
@@ -14,7 +15,7 @@ var validate *validator.Validate
 
 type NotaryService struct {
 	provider services.CrossTxDataService
-	fh       tx.Handler
+	fh       fabric.Handler
 	handlers map[pb.TransferPropertyRequest_NetworkType]TxHandler
 }
 
@@ -32,7 +33,8 @@ func NewNotaryService() *NotaryService {
 	validate = validator.New()
 	n := &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
-		fh:       tx.New(),
+		fh:       tx.NewFabricHandler(),
+		handlers: make(map[pb.TransferPropertyRequest_NetworkType]TxHandler, 8),
 	}
 	n.AddHandler(pb.TransferPropertyRequest_eth, eth.NewEthHandler("http://localhost:8545"))
 	n.AddHandler(pb.TransferPropertyRequest_fabric, n.fh)
