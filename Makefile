@@ -22,12 +22,13 @@ install:
 
 # install geth and start with a specified account
 start:
-	@./scripts/start-node.sh
+	@cd scripts && exec ./start-node.sh
 
 stop:
 	@./scripts/stop-node.sh
 
 clean:
+	@pkill geth
 	@rm ~/.ethereum/ -rf
 
 
