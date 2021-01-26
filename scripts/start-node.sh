@@ -29,3 +29,7 @@ echo "geth successfully started!"
 
 
 
+# start fabric nodes
+echo "starting fabric networks"
+cd ../fabric/fabric-samples/test-network && ./network.sh createChannel -c mychannel
+echo "started fabric network"

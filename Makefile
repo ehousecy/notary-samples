@@ -19,13 +19,14 @@ build:
 # install necessary binaries
 install:
 	@./scripts/download-binaries.sh
+	@echo "finished install binaries"
 
 # install geth and start with a specified account
 start:
 	@cd scripts && exec ./start-node.sh
 
 stop:
-	@./scripts/stop-node.sh
+	@cd scripts && exec ./stop-node.sh
 
 clean:
 	@pkill geth
