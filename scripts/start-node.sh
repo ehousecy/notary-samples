@@ -9,7 +9,7 @@ print "starting ethereum node..."
 print "initing geth data"
 geth init genesis.json
 #start geth background
-spawn geth --http --http.addr 127.0.0.1 --http.port 8545 --ws --ws.port 3334 --nodiscover &
+nohup spawn geth --http --http.addr 127.0.0.1 --http.port 8545 --ws --ws.port 3334 --nodiscover &
 print "geth started successfully..."
 
 #genenrate coinbase account
