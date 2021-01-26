@@ -25,6 +25,7 @@ done
 #./gen-accounts.sh
 ./auto-mining.sh
 
-echo "node successfully started!"
+echo "geth successfully started!"
+
 
 
