@@ -186,3 +186,5 @@ monitor
 1. fabric go-sdk 需改造源码，实现构造和发送交易接口（签名，背书，发送）
 2. grpc
 3. rollback not considered
+
+priv := 478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb

@@ -1,2 +1,5 @@
 /.idea/
 /vendor/
+/**/*_sk
+/**/*.pem
+/notary-server/fabric/client/config.yaml

@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/ehousecy/notary-samples/fabric/business"
-	"github.com/ehousecy/notary-samples/fabric/sdkutil"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/business"
+	"github.com/ehousecy/notary-samples/notary-server/fabric/sdkutil"
 	"github.com/golang/protobuf/proto"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
@@ -70,12 +70,12 @@ func GetClientByChannelID(channelID string) (*Client, error) {
 
 func New(channelID string) (*Client, error) {
 	client := &Client{ChannelID: channelID}
-	sdk, err := business.Support.InitSDK(channelID)
+	sdk, err := business.New().InitSDK(channelID)
 	if err != nil {
 		return nil, err
 	}
 	client.SDK = sdk
-	contextOptions, err := business.Support.GetContextOptions(channelID)
+	contextOptions, err := business.New().GetContextOptions(channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,13 +109,6 @@ func New(channelID string) (*Client, error) {
 	return client, err
 }
 
-func (c *Client) CreateTransactor() (*channelImpl.Transactor, error) {
-	reqCtx, cancel := context.NewRequest(c.ContextClient, context.WithTimeout(10*time.Minute))
-	defer cancel()
-	transactor, err := channelImpl.NewTransactor(reqCtx, c.ChannelCfg)
-	return transactor, err
-}
-
 func (c *Client) CreateClientContext(transactor *channelImpl.Transactor) *invoke.ClientContext {
 	clientContext := &invoke.ClientContext{
 		Discovery:    c.Discovery,
@@ -135,7 +128,9 @@ func (c *Client) CreateTransactionProposal(chrequest *channel.Request, creator [
 		TransientMap: chrequest.TransientMap,
 		IsInit:       chrequest.IsInit,
 	}
-	transactor, err := c.CreateTransactor()
+	reqCtx, cancel := context.NewRequest(c.ContextClient, context.WithTimeout(10*time.Minute))
+	defer cancel()
+	transactor, err := channelImpl.NewTransactor(reqCtx, c.ChannelCfg)
 	if err != nil {
 		return nil, err
 	}
