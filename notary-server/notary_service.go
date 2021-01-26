@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/eth"
 	"github.com/ehousecy/notary-samples/notary-server/fabric"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	pb "github.com/ehousecy/notary-samples/proto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-playground/validator/v10"
 	"log"
 )
@@ -38,8 +36,7 @@ func NewNotaryService() *NotaryService {
 		fh:       tx.NewFabricHandler(),
 		handlers: make(map[pb.TransferPropertyRequest_NetworkType]TxHandler, 8),
 	}
-
-	n.AddHandler(pb.TransferPropertyRequest_eth, eth.NewEthHandler("todo"))
+	n.AddHandler(pb.TransferPropertyRequest_eth, eth.NewEthHandler("http://localhost:8545"))
 	n.AddHandler(pb.TransferPropertyRequest_fabric, n.fh)
 	return n
 }

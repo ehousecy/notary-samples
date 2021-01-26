@@ -38,7 +38,7 @@ func NewEthHandler(url string) *EthHanlder {
 	}
 	handler := &EthHanlder{
 		client:  c,
-		monitor: NewMonitor(url),
+		monitor: NewMonitor("ws://localhost:3334"),
 	}
 	handler.loop()
 	handler.monitor.Start()
