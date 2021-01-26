@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/eth"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	pb "github.com/ehousecy/notary-samples/proto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-playground/validator/v10"
 	"log"
 )
@@ -202,3 +204,5 @@ func (n *NotaryService) TestDial(ctx context.Context, in *pb.Ping) (*pb.Pong, er
 		Pong: "ping received",
 	}, nil
 }
+
+
