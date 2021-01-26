@@ -89,7 +89,7 @@ func ValidateExistedValidTxDetailCIDAndType(cid int64, txType string) (bool, err
 	//判断是否无效
 	if len(txDetails) > 0 {
 		for _, td := range txDetails {
-			if td.TxStatus != constant.TxStatusFromFinished {
+			if td.TxStatus != constant.TxStatusFromFailed {
 				return true, nil
 			}
 		}

@@ -41,12 +41,13 @@ type CrossTxInfo struct {
 type ConfirmingTxInfo struct {
 	ID          string
 	TxID        string
-	isOfflineTx bool
+	IsOfflineTx bool
 	ChannelID   string
 }
 
 type CrossTxDataService interface {
 	CreateCrossTx(CrossTxBase) (string, error)
+	ValidateEnableCreateTransferFromTx(cid string, txType string) error
 	CreateTransferFromTx(cid string, txID string, txType string) error
 	ValidateEnableCompleteTransferFromTx(txID string) error
 	CompleteTransferFromTx(txID string) error

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/ehousecy/notary-samples/notary-server/fabric/monitor"
-	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"google.golang.org/grpc"
 	"log"
@@ -19,8 +17,6 @@ func main() {
 		panic(err)
 	}
 	defer lis.Close()
-	//开启fabric区块监听
-	monitor.New(tx.New()).Start()
 	s := grpc.NewServer()
 	ns := NewNotaryService()
 	pb.RegisterNotaryServiceServer(s, ns)

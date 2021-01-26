@@ -25,10 +25,10 @@ func (cts CrossTxDataServiceProvider) CreateCrossTx(ctxBase CrossTxBase) (string
 	return int64ToString(cid), err
 }
 
-func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID string, txType string) error {
+func (cts CrossTxDataServiceProvider) ValidateEnableCreateTransferFromTx(cidStr string, txType string) error {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return errors.New("cid 异常")
+		return errors.New("invalid cross-chain transaction id")
 	}
 	//1.判断ctxID是否存在
 	ctd, err := model.GetCrossTxDetailByID(cid)
@@ -49,13 +49,32 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 	if existed {
 		return errors.New("交易已存在")
 	}
+	return nil
+}
+
+func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID string, txType string) error {
+	if err := cts.ValidateEnableCreateTransferFromTx(cidStr, txType); err != nil {
+		return err
+	}
+	cid, err := stringToInt64(cidStr)
+	if err != nil {
+		return errors.New("invalid cross-chain transaction id")
+	}
+	//1.获取跨链交易
+	ctd, err := model.GetCrossTxDetailByID(cid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("跨链交易不存在")
+		}
+		return err
+	}
 
 	//3.开启事务
 	tx, err := model.DB.Beginx()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	//4.创建tx，更新ctx
 	td := model.NewTransferFromTx(ctd, txType, txID)
@@ -118,7 +137,7 @@ func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	if err = td.BoundTransferToTx(txID, tx); err != nil {
 		return err
@@ -156,7 +175,7 @@ func (cts CrossTxDataServiceProvider) CompleteTransferToTx(txID string) error {
 func (cts CrossTxDataServiceProvider) QueryCrossTxInfoByCID(cidStr string) (*CrossTxInfo, error) {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return nil, errors.New("cid 异常")
+		return nil, errors.New("invalid cross-chain transaction id")
 	}
 	ctd, err := model.GetCrossTxDetailByID(cid)
 	if err != nil {
@@ -316,10 +335,10 @@ func convert2ConfirmingTxInfo(td *model.TxDetail) ConfirmingTxInfo {
 	cti.ID = int64ToString(td.CrossTxID)
 	if td.TxStatus == constant.TxStatusFromCreated {
 		cti.TxID = td.FromTxID
-		cti.isOfflineTx = true
+		cti.IsOfflineTx = true
 	} else {
 		cti.TxID = td.ToTxID
-		cti.isOfflineTx = false
+		cti.IsOfflineTx = false
 	}
 	return cti
 }
@@ -445,7 +464,7 @@ func completeTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID str
 }
 
 func rollbackTx(tx *sqlx.Tx) {
-	if err := tx.Rollback(); err != nil {
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
 		log.Printf("unable to rollback: %v", err)
 	}
 }

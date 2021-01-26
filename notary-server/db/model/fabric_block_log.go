@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	sq "github.com/Masterminds/squirrel"
 	"log"
 	"time"
@@ -55,7 +56,8 @@ func QueryLastFabricBlockNumber(channelID string) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	var blockNumber uint64 = 0
+	var blockNumber sql.NullInt64
 	err = DB.Get(&blockNumber, qSql, args...)
-	return blockNumber, err
+	var num = uint64(blockNumber.Int64)
+	return num, err
 }
