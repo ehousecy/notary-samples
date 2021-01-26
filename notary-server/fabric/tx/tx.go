@@ -137,6 +137,7 @@ func putTxID(channelID, txID string, ti txInfo) {
 		confirmingTxIDMap[channelID] = map[string]txInfo{
 			txID: ti,
 		}
+		txMap = confirmingTxIDMap[channelID]
 	}
 	txMap[txID] = ti
 }
@@ -197,7 +198,7 @@ func (th *txHandler) HandleTxStatusBlock(channelID string, fb *peer.FilteredBloc
 
 func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 	//判断交易id是否有效
-	if ft.Txid == "" || ft.TxValidationCode != peer.TxValidationCode_VALID {
+	if ft.Txid == "" {
 		return
 	}
 
@@ -211,12 +212,16 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 		return
 	}
 
-	err := th.db.CompleteTransferTx(ft.Txid)
-	if err != nil {
-		return
-	}
-	if info.isOfflineTx {
-		_ = th.db.ValidateEnableBoundTransferToTx(ft.Txid, th.ticketIDChan)
+	if ft.TxValidationCode != peer.TxValidationCode_VALID {
+		//todo:交易无效修改跨链交易记录
+	} else {
+		err := th.db.CompleteTransferTx(ft.Txid)
+		if err != nil {
+			return
+		}
+		if info.isOfflineTx {
+			_ = th.db.ValidateEnableBoundTransferToTx(ft.Txid, th.ticketIDChan)
+		}
 	}
 
 	//处理完删除交易id

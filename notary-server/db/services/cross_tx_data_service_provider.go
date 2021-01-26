@@ -55,7 +55,7 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	//4.创建tx，更新ctx
 	td := model.NewTransferFromTx(ctd, txType, txID)
@@ -118,7 +118,7 @@ func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	if err = td.BoundTransferToTx(txID, tx); err != nil {
 		return err
@@ -445,7 +445,7 @@ func completeTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID str
 }
 
 func rollbackTx(tx *sqlx.Tx) {
-	if err := tx.Rollback(); err != nil {
+	if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
 		log.Printf("unable to rollback: %v", err)
 	}
 }

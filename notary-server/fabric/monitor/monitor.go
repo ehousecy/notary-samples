@@ -61,6 +61,5 @@ func (fm *FabricMonitor) filteredBlockListener(channelID string, ccp contextApi.
 				transaction.TxValidationCode)
 		}
 		go fm.th.HandleTxStatusBlock(channelID, e.FilteredBlock)
-		log.Println() // Just go print empty log for easy to read
 	}
 }

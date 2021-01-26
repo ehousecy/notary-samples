@@ -33,7 +33,9 @@ func NewNotaryService() *NotaryService {
 	n := &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
 		fh:       tx.New(),
+		handlers: make(map[pb.TransferPropertyRequest_NetworkType]TxHandler, 8),
 	}
+
 	n.AddHandler(pb.TransferPropertyRequest_eth, eth.NewEthHandler("todo"))
 	n.AddHandler(pb.TransferPropertyRequest_fabric, n.fh)
 	return n
