@@ -25,10 +25,10 @@ func (cts CrossTxDataServiceProvider) CreateCrossTx(ctxBase CrossTxBase) (string
 	return int64ToString(cid), err
 }
 
-func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID string, txType string) error {
+func (cts CrossTxDataServiceProvider) ValidateEnableCreateTransferFromTx(cidStr string, txType string) error {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return errors.New("cid 异常")
+		return errors.New("invalid cross-chain transaction id")
 	}
 	//1.判断ctxID是否存在
 	ctd, err := model.GetCrossTxDetailByID(cid)
@@ -48,6 +48,25 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 	}
 	if existed {
 		return errors.New("交易已存在")
+	}
+	return nil
+}
+
+func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID string, txType string) error {
+	if err := cts.ValidateEnableCreateTransferFromTx(cidStr, txType); err != nil {
+		return err
+	}
+	cid, err := stringToInt64(cidStr)
+	if err != nil {
+		return errors.New("invalid cross-chain transaction id")
+	}
+	//1.获取跨链交易
+	ctd, err := model.GetCrossTxDetailByID(cid)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("跨链交易不存在")
+		}
+		return err
 	}
 
 	//3.开启事务
@@ -156,7 +175,7 @@ func (cts CrossTxDataServiceProvider) CompleteTransferToTx(txID string) error {
 func (cts CrossTxDataServiceProvider) QueryCrossTxInfoByCID(cidStr string) (*CrossTxInfo, error) {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return nil, errors.New("cid 异常")
+		return nil, errors.New("invalid cross-chain transaction id")
 	}
 	ctd, err := model.GetCrossTxDetailByID(cid)
 	if err != nil {
