@@ -3,3 +3,5 @@
 /**/*_sk
 /**/*.pem
 /notary-server/fabric/client/config.yaml
+/**/fabric-samples
+/**/organizations
