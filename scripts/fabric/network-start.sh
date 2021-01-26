@@ -8,6 +8,7 @@ fi
 cd fabric-samples/test-network || exit
 ./network.sh down
 ./network.sh up
+
 sleep 1
 ./network.sh createChannel
 sleep 1
