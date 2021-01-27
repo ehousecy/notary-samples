@@ -15,7 +15,7 @@ if ! command -v  geth &> /dev/null;then
 fi
 
 # download and install fabric binary
-if [ ! -d "./fabric/fabric-samples" ];then
+if [ ! -d "./scripts/fabric/fabric-samples" ];then
   echo  "installing fabric binaries"
   cd scripts
   mkdir -p ./fabric
