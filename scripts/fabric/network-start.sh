@@ -19,5 +19,8 @@ cd ../..
 ./network-init.sh
 
 #cp msp to server fabric business
-cp -r fabric-samples/test-network/organizations "${PWD}"/../../notary-server/fabric/business/impl/
+if [ ! -d "$HOME"/.notary-samples ]; then
+    mkdir "$HOME"/.notary-samples
+fi
+cp -r fabric-samples/test-network/organizations "$HOME"/.notary-samples/
 echo "====================== [finished] start docker environment for Fabric testnet ========================="
