@@ -1,33 +1,25 @@
 package impl
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"os"
-	"path/filepath"
 )
 
 type BasicBusiness struct {
 }
 
 func (b BasicBusiness) InitSDK() (*fabsdk.FabricSDK, error) {
-	var AppPath string
-	var err error
-	if AppPath, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
-		panic(err)
-	}
-	WorkPath, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	home := os.Getenv("HOME")
 	var filename = "config.yaml"
-	appConfigPath := filepath.Join(WorkPath, "notary-server", "fabric", "business", "impl", filename)
+	appConfigPath := filepath.Join(home, ".notary-samples", filename)
+	fmt.Println(appConfigPath)
 	if !FileExists(appConfigPath) {
-		appConfigPath = filepath.Join(AppPath, "notary-server", "fabric", "business", "impl", filename)
-		if !FileExists(appConfigPath) {
-			panic("config file not exist")
-		}
+		panic("config file not exist")
 	}
 	ccpPath := filepath.Join(appConfigPath)
 	return fabsdk.New(config.FromFile(filepath.Clean(ccpPath)))

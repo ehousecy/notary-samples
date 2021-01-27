@@ -5,4 +5,4 @@ rm ~/.ethereum -rf
 
 
 #stop fabric networks
-cd ../fabric/fabric-samples/test-network && ./network.sh down
+cd fabric && ./network-stop.sh
