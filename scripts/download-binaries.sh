@@ -17,6 +17,7 @@ fi
 # download and install fabric binary
 if [ ! -d "./fabric/fabric-samples" ];then
   echo  "installing fabric binaries"
+  cd scripts
   mkdir -p ./fabric
   cd fabric
   #curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.2.1 1.4.9

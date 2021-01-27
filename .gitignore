@@ -5,3 +5,4 @@
 /notary-server/fabric/client/config.yaml
 /**/fabric-samples
 /**/organizations
+/**/go.sum
