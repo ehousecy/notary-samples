@@ -65,7 +65,7 @@ client:
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
-    path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations
+    path: ${HOME}/.notary-samples/organizations
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
@@ -97,10 +97,10 @@ client:
     # [Optional]. Client key and cert for TLS handshake with peers and orderers
     client:
       key:
-        path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.key
+        path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.key
       #        path: ${FABRIC_SDK_GO_PROJECT_PATH}/../../test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.key
       cert:
-        path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.crt
+        path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.crt
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
@@ -325,7 +325,7 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: ${HOME}/.notary-samples/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 #
 # List of peers to send various requests to, including endorsement, query
@@ -351,7 +351,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer1.org1.example.com:
     # this URL is used to send endorsement and query requests
@@ -371,7 +371,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
     url: grpcs://localhost:9051
@@ -388,7 +388,7 @@ peers:
       allow-insecure: false
 
     tlsCACerts:
-      path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      path: ${HOME}/.notary-samples/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
@@ -401,13 +401,13 @@ certificateAuthorities:
     url: https://localhost:7054
     tlsCACerts:
       # Comma-Separated list of paths
-      path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
-          path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.key
+          path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.key
         cert:
-          path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.crt
+          path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/tls/client.crt
 
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
@@ -420,13 +420,13 @@ certificateAuthorities:
     url: https://localhost:8054
     tlsCACerts:
       # Comma-Separated list of paths
-      path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      path: ${HOME}/.notary-samples/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
-          path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/tls/client.key
+          path: ${HOME}/.notary-samples/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/tls/client.key
         cert:
-          path: ${FABRIC_SDK_GO_PROJECT_PATH}/notary-server/fabric/business/impl/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/tls/client.crt
+          path: ${HOME}/.notary-samples/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/tls/client.crt
 
       # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
       # needed to enroll and invoke new users.
