@@ -417,15 +417,11 @@ certificateAuthorities:
 
 entityMatchers:
   peer:
-    - pattern: peer0.org1.example.(\w+)
-      urlSubstitutionExp: localhost:7051
-      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
-      mappedHost: peer0.org1.example.com
-    - pattern: (\w+).org1.example.(\w+):(\d+)
+    - pattern: (\w+).org1.example.com:(\d+)
       urlSubstitutionExp: localhost:${2}
       sslTargetOverrideUrlSubstitutionExp: ${1}.org1.example.com
       mappedHost: ${1}.org1.example.com
-    - pattern: (\w+).org2.example.(\w+):(\d+)
+    - pattern: (\w+).org2.example.com:(\d+)
       urlSubstitutionExp: localhost:${2}
       sslTargetOverrideUrlSubstitutionExp: ${1}.org2.example.com
       mappedHost: ${1}.org2.example.com
