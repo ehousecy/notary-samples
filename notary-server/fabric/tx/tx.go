@@ -49,6 +49,7 @@ func NewFabricHandler() *txHandler {
 }
 
 func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
+	fmt.Println("开始fabric交易")
 	//通过ticketId查询跨链交易信息
 	crossTxInfo, err := th.db.QueryCrossTxInfoByCID(recv.CTxId)
 	if err != nil {
@@ -118,9 +119,11 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 	//保存交易id到db
 	err = th.db.CreateTransferFromTx(crossTxInfo.ID, string(proposal.TxnID), constant.TypeFabric)
 	if err != nil {
+		fmt.Printf("保存交易错误, err=%v", err)
 		return err
 	}
 	//发送SignedEnvelope到orderer
+	fmt.Println("发送fabric交易")
 	_, err = c.SendSignedEnvelopTx(signedEnvelope)
 	if err != nil {
 		return err
@@ -130,6 +133,7 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 		ticketId:    crossTxInfo.ID,
 		isOfflineTx: true,
 	})
+	fmt.Println("结束fabric交易")
 	return nil
 }
 

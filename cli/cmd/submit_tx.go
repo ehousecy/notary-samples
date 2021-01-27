@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"io"
 
 	"github.com/ehousecy/notary-samples/cli/fabutil"
 	"github.com/ehousecy/notary-samples/cli/grpc"
@@ -110,20 +111,26 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 		NetworkType: proto.TransferPropertyRequest_fabric,
 	})
 	exitErr(err)
-	recv, err := srv.Recv()
-	exitErr(err)
-	//签名proposal
-	sign, err := fabutil.Sign(recv.TxData, privateKey)
-	exitErr(err)
-	err = srv.Send(&proto.TransferPropertyRequest{Data: sign})
-	exitErr(err)
-	recv, err = srv.Recv()
-	exitErr(err)
-	//签名交易
-	sign, err = fabutil.Sign(recv.TxData, privateKey)
-	exitErr(err)
-	err = srv.Send(&proto.TransferPropertyRequest{Data: sign})
-	exitErr(err)
+	var i = 1
+	for {
+		recv, err := srv.Recv()
+		if err == io.EOF {
+			break
+		}
+		exitErr(err)
+		if i <= 2 {
+			fmt.Printf("第[%v]次收到消息:%v", i, string(recv.TxData))
+			//签名proposal
+			sign, err := fabutil.Sign(recv.TxData, privateKey)
+			exitErr(err)
+			err = srv.Send(&proto.TransferPropertyRequest{Data: sign})
+			exitErr(err)
+			i++
+		}
+	}
+
+	// err = srv.CloseSend()
+	// exitErr(err)
 	log.Println("end transfer FabricSubmitTx method=====================")
 
 }

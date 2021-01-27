@@ -118,7 +118,7 @@ channels:
 
     # Optional. list of peers from participating orgs
     peers:
-      peer1.org1.example.com:
+      peer0.org1.example.com:
         # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
         # have the chaincode installed. The app can also use this property to decide which peers
         # to send the chaincode install request. Default: true
@@ -263,7 +263,6 @@ organizations:
 
     peers:
       - peer0.org1.example.com
-      - peer1.org1.example.com
 
     # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
     # network. Typically certificates provisioning is done in a separate process outside of the
@@ -353,26 +352,6 @@ peers:
       # Certificate location absolute path
       path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
-  peer1.org1.example.com:
-    # this URL is used to send endorsement and query requests
-    url: grpcs://localhost:7151
-
-    grpcOptions:
-      ssl-target-name-override: localhost
-      # These parameters should be set in coordination with the keepalive policy on the server,
-      # as incompatible settings can result in closing of connection.
-      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
-      keep-alive-time: 0s
-      keep-alive-timeout: 20s
-      keep-alive-permit: false
-      fail-fast: false
-      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
-      allow-insecure: false
-
-    tlsCACerts:
-      # Certificate location absolute path
-      path: ${HOME}/.notary-samples/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
-
   peer0.org2.example.com:
     url: grpcs://localhost:9051
     grpcOptions:
@@ -435,5 +414,46 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org2.example.com
+
+entityMatchers:
+  peer:
+    - pattern: peer0.org1.example.(\w+)
+      urlSubstitutionExp: localhost:7051
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
+      mappedHost: peer0.org1.example.com
+    - pattern: (\w+).org1.example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:${2}
+      sslTargetOverrideUrlSubstitutionExp: ${1}.org1.example.com
+      mappedHost: ${1}.org1.example.com
+    - pattern: (\w+).org2.example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:${2}
+      sslTargetOverrideUrlSubstitutionExp: ${1}.org2.example.com
+      mappedHost: ${1}.org2.example.com
+    - pattern: (\w+):7051
+      urlSubstitutionExp: localhost:7051
+      sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
+      mappedHost: peer0.org1.example.com
+    - pattern: (\w+):9051
+      urlSubstitutionExp: localhost:9051
+      sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
+      mappedHost: peer0.org2.example.com
+  orderer:
+    - pattern: (\w+).example.(\w+)
+      urlSubstitutionExp: localhost:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: orderer.example.com
+    - pattern: (\w+).example.(\w+):(\d+)
+      urlSubstitutionExp: localhost:7050
+      sslTargetOverrideUrlSubstitutionExp: orderer.example.com
+      mappedHost: orderer.example.com
+  certificateAuthority:
+    - pattern: (\w+).org1.example.(\w+)
+      urlSubstitutionExp: localhost:7054
+      sslTargetOverrideUrlSubstitutionExp: ca.org1.example.com
+      mappedHost: ca.org1.example.com
+    - pattern: (\w+).org2.example.(\w+)
+      urlSubstitutionExp: localhost:8054
+      sslTargetOverrideUrlSubstitutionExp: ca.org2.example.com
+      mappedHost: ca.org2.example.com
 
 
