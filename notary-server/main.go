@@ -16,6 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Println("starting Notary server...")
 	defer lis.Close()
 	s := grpc.NewServer()
 	ns := NewNotaryService()
@@ -23,6 +24,7 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve %v", err)
 	}
+	log.Println("Notary-server started successfully.")
 	defer s.Stop()
 
 }

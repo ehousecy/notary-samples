@@ -5,6 +5,7 @@ GO ?= latest
 GORUN = env GO111MODULE=on go run
 GOPROXY="https://goproxy.io,direct"
 
+.PHONY: build install start stop gen
 gen:
 	@echo "Compiling proto..."
 	@protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative proto/*.proto
