@@ -1,9 +1,7 @@
 # generate proto buffer codes
 
-GOBIN = ./build/
 GO ?= latest
 GORUN = env GO111MODULE=on go run
-GOPROXY="https://goproxy.io,direct"
 
 .PHONY: build install start stop gen
 gen:
