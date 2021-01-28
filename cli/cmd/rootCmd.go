@@ -17,4 +17,5 @@ func init() {
 	RootCmd.AddCommand(listTicketCmd)
 	RootCmd.AddCommand(queryCmd)
 	RootCmd.AddCommand(submitTxCmd)
+	RootCmd.AddCommand(approveCmd)
 }

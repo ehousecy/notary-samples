@@ -21,6 +21,7 @@ type txParam struct {
 	boundTxID string
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_CreateCrossTx_Success$ -v
 func TestCrossTxDataServiceProvider_CreateCrossTx_Success(t *testing.T) {
 	ctb := CrossTxBase{
 		EthFrom:         "0X123456",
@@ -41,6 +42,7 @@ func TestCrossTxDataServiceProvider_CreateCrossTx_Success(t *testing.T) {
 	require.Equal(t, constant.StatusCreated, cti.Status, "failed validate cross tx status")
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_CreateTransferFromTx_Success$ -v
 func TestCrossTxDataServiceProvider_CreateTransferFromTx_Success(t *testing.T) {
 	var txTests = []txParam{
 		{cid: cid, txID: fabricFromTxID, txType: constant.TypeFabric},
@@ -57,6 +59,7 @@ func TestCrossTxDataServiceProvider_CreateTransferFromTx_Success(t *testing.T) {
 	}
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_CompleteTransferFromTx_Success$ -v
 func TestCrossTxDataServiceProvider_CompleteTransferFromTx_Success(t *testing.T) {
 	var txTests = []txParam{
 		{cid: cid, txID: fabricFromTxID, txType: constant.TypeFabric},
@@ -79,6 +82,7 @@ func TestCrossTxDataServiceProvider_CompleteTransferFromTx_Success(t *testing.T)
 	require.Equal(t, constant.StatusHosted, cti.Status, "failed validate cross Tx status")
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_BoundTransferToTx_Success$ -v
 func TestCrossTxDataServiceProvider_BoundTransferToTx_Success(t *testing.T) {
 	var txTests = []txParam{
 		{cid: cid, txID: fabricToTxID, txType: constant.TypeFabric, boundTxID: fabricFromTxID},
@@ -94,6 +98,7 @@ func TestCrossTxDataServiceProvider_BoundTransferToTx_Success(t *testing.T) {
 	}
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_CompleteTransferToTx_Success$ -v
 func TestCrossTxDataServiceProvider_CompleteTransferToTx_Success(t *testing.T) {
 	var txTests = []txParam{
 		{cid: cid, txID: fabricToTxID, txType: constant.TypeFabric},
@@ -111,6 +116,7 @@ func TestCrossTxDataServiceProvider_CompleteTransferToTx_Success(t *testing.T) {
 	require.Equal(t, constant.StatusFinished, cti.Status, "failed validate cross Tx status")
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_QueryConfirmingTxInfo$ -v
 func TestCrossTxDataServiceProvider_QueryConfirmingTxInfo(t *testing.T) {
 	typeTests := []string{constant.TypeEthereum, constant.TypeFabric}
 	for _, tt := range typeTests {
@@ -122,6 +128,7 @@ func TestCrossTxDataServiceProvider_QueryConfirmingTxInfo(t *testing.T) {
 	}
 }
 
+// go test -timeout 30s github.com/ehousecy/notary-samples/notary-server/db/services -run ^TestCrossTxDataServiceProvider_QueryCrossTxInfoByCID$ -v
 func TestCrossTxDataServiceProvider_QueryCrossTxInfoByCID(t *testing.T) {
 	cti, err := provider.QueryCrossTxInfoByCID(cid)
 	require.NoErrorf(t, err, "failed query cross tx info, cid=%v, err=%v", cid, err)
@@ -130,6 +137,16 @@ func TestCrossTxDataServiceProvider_QueryCrossTxInfoByCID(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("cross tx info: %v", string(marshal))
+}
+
+func TestCrossTxDataServiceProvider_CancelTransferTx(t *testing.T) {
+	//provider.CancelTransferTx(ethFromTxID)
+	provider.CancelTransferTx(ethToTxID)
+}
+
+func TestCrossTxDataServiceProvider_FailTransferTx(t *testing.T) {
+	//provider.FailTransferTx(ethFromTxID)
+	provider.FailTransferTx(ethToTxID)
 }
 
 func getCrossTxInfoByCID(cid string, t *testing.T) *CrossTxInfo {

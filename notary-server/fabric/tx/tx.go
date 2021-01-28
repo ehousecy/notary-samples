@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
+	"log"
 	"sync"
 )
 
@@ -122,17 +123,20 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 		fmt.Printf("保存交易错误, err=%v", err)
 		return err
 	}
-	//发送SignedEnvelope到orderer
-	fmt.Println("发送fabric交易")
-	_, err = c.SendSignedEnvelopTx(signedEnvelope)
-	if err != nil {
-		return err
-	}
 	//将验证交易id放到map中
 	putTxID(crossTxInfo.FabricChannel, string(proposal.TxnID), txInfo{
 		ticketId:    crossTxInfo.ID,
 		isOfflineTx: true,
 	})
+	//发送SignedEnvelope到orderer
+	fmt.Println("发送fabric交易")
+	_, err = c.SendSignedEnvelopTx(signedEnvelope)
+	if err != nil {
+		deleteTxID(crossTxInfo.FabricChannel, string(proposal.TxnID))
+		//todo:取消创建交易
+		th.db.CancelTransferTx(string(proposal.TxnID))
+		return err
+	}
 	fmt.Println("结束fabric交易")
 	return nil
 }
@@ -146,6 +150,12 @@ func putTxID(channelID, txID string, ti txInfo) {
 		txMap = confirmingTxIDMap[channelID]
 	}
 	txMap[txID] = ti
+}
+func deleteTxID(channelID, txID string) {
+	txMap, ok := confirmingTxIDMap[channelID]
+	if ok {
+		delete(txMap, txID)
+	}
 }
 
 func (th *txHandler) Approve(ticketId string) error {
@@ -180,16 +190,16 @@ func (th *txHandler) Approve(ticketId string) error {
 	if err = th.db.BoundTransferToTx(crossTxInfo.FabricTx.FromTxID, txID); err != nil {
 		return err
 	}
-
-	//发送交易
-	if _, err = c.SendSignedEnvelopTx(signedEnvelope); err != nil {
-		//todo:取消交易绑定
-		return err
-	}
 	putTxID(crossTxInfo.FabricChannel, txID, txInfo{
 		ticketId:    crossTxInfo.ID,
 		isOfflineTx: false,
 	})
+	//发送交易
+	if _, err = c.SendSignedEnvelopTx(signedEnvelope); err != nil {
+		deleteTxID(crossTxInfo.FabricChannel, txID)
+		th.db.CancelTransferTx(txID)
+		return err
+	}
 
 	return nil
 }
@@ -219,10 +229,12 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 	}
 
 	if ft.TxValidationCode != peer.TxValidationCode_VALID {
-		//todo:交易无效修改跨链交易记录
+		th.db.FailTransferTx(ft.Txid)
+		_ = th.db.ValidateEnableBoundTransferToTx(ft.Txid, th.ticketIDChan)
 	} else {
 		err := th.db.CompleteTransferTx(ft.Txid)
 		if err != nil {
+			log.Printf("完成交易失败, txid=%v, err=%v\n", ft.Txid, err)
 			return
 		}
 		if info.isOfflineTx {
