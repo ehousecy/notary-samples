@@ -105,7 +105,10 @@ func New(channelID string) (*Client, error) {
 	if client.Event, err = client.ChannelService.EventService(); err != nil {
 		return nil, err
 	}
-
+	client.CC, err = channel.New(client.ChannelProvider)
+	if err != nil {
+		return nil, err
+	}
 	return client, err
 }
 

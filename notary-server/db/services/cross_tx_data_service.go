@@ -49,15 +49,13 @@ type CrossTxDataService interface {
 	CreateCrossTx(CrossTxBase) (string, error)
 	ValidateEnableCreateTransferFromTx(cid string, txType string) error
 	CreateTransferFromTx(cid string, txID string, txType string) error
-	ValidateEnableCompleteTransferFromTx(txID string) error
-	CompleteTransferFromTx(txID string) error
 	ValidateEnableBoundTransferToTx(boundTxID string, cIDChan chan string) error
 	BoundTransferToTx(boundTxID, txID string) error
-	ValidateEnableCompleteTransferToTx(txID string) error
-	CompleteTransferToTx(txID string) error
 	QueryCrossTxInfoByCID(string) (*CrossTxInfo, error)
 	QueryAllCrossTxInfo() ([]CrossTxInfo, error)
 	QueryConfirmingTxInfo(txType string) ([]ConfirmingTxInfo, error)
 	ValidateEnableCompleteTransferTx(txID string) error
 	CompleteTransferTx(txID string) error
+	CancelTransferTx(txID string)
+	FailTransferTx(txID string)
 }

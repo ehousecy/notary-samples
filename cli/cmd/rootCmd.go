@@ -18,4 +18,5 @@ func init() {
 	RootCmd.AddCommand(queryCmd)
 	RootCmd.AddCommand(submitTxCmd)
 	RootCmd.AddCommand(genAccountCmd)
+	RootCmd.AddCommand(approveCmd)
 }
