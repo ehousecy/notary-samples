@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/eth"
 	"github.com/ehousecy/notary-samples/notary-server/fabric"
 	"github.com/ehousecy/notary-samples/notary-server/fabric/tx"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang/protobuf/ptypes"
 	"log"
 )
 
@@ -178,6 +180,15 @@ func covertCreateCrossTxReq(req *pb.CreateCrossTxReq) (services.CrossTxBase, err
 }
 
 func convertToCrossTx(cti services.CrossTxInfo) *pb.CrossTx {
+	createTime, _ := ptypes.TimestampProto(cti.CreatedAt)
+	updateTime, _ := ptypes.TimestampProto(cti.UpdatedAt)
+	//TODO: 状态修改
+	var status *pb.CrossTxStatus
+	if cti.Status == constant.StatusFinished {
+		status = &pb.CrossTxStatus{Status: &pb.CrossTxStatus_TStatus{TStatus: pb.TicketStatus_finished}}
+	} else {
+		status = &pb.CrossTxStatus{Status: &pb.CrossTxStatus_TStatus{TStatus: pb.TicketStatus_created}}
+	}
 	return &pb.CrossTx{
 		CTxId: cti.ID,
 		Detail: &pb.CrossTxDetail{
@@ -190,9 +201,9 @@ func convertToCrossTx(cti services.CrossTxInfo) *pb.CrossTx {
 			FChannel:       cti.FabricChannel,
 			FChaincodeName: cti.FabricChaincode,
 		},
-		Status:         &pb.CrossTxStatus{Status: &pb.CrossTxStatus_TStatus{TStatus: pb.TicketStatus_finished}},
-		CreateTime:     nil,
-		LastUpdateTime: nil,
+		Status:         status,
+		CreateTime:     createTime,
+		LastUpdateTime: updateTime,
 	}
 }
 
