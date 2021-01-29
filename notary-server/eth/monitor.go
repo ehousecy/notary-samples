@@ -99,6 +99,7 @@ func (m *EthMonitor) loop() {
 // if a new transaction is sent out, add the transaction hash in the watching list
 // called by ethereum handler
 func (m *EthMonitor) AddTxRecord(txhash string) error {
+	EthLogPrintf("received ethereum transaction, id: %s", txhash)
 	key := []byte(txhash)
 	val := new(big.Int).SetUint64(0)
 	err := m.DBInterface.Put(key, val.Bytes(), nil)
@@ -207,6 +208,7 @@ func (m *EthMonitor) notify(txhash string, isSuccess bool) error {
 }
 
 func (m *EthMonitor)RemoveTx(txhash string) error  {
+	EthLogPrintf("Confirmed tx, removing tx: %s", txhash)
 	key := []byte(txhash)
 	err := m.DBInterface.Delete(key, nil)
 	return err
