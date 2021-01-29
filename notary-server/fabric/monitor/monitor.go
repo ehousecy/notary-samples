@@ -23,7 +23,7 @@ func New(th fabric.Handler) *FabricMonitor {
 func (fm *FabricMonitor) Start() {
 	err := fm.th.QueryConfirmingTx()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	//1.开启区块监听
 	fm.BlockEventsMonitor(fm.channelIDs)

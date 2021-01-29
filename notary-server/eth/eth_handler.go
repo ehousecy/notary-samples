@@ -171,6 +171,7 @@ func (e *EthHanlder) Approve(ticketId string) error {
 
 	rawTx := e.BuildTx(NotaryAddress, ticketInfo.EthTo, ticketInfo.EthAmount)
 	err = e.SignAndSendTx(ticketId, rawTx)
+	//todo:err
 	return nil
 }
 

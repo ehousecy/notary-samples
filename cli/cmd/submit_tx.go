@@ -109,6 +109,7 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 			}
 		}
 		certs, err := ioutil.ReadDir(filepath.Join(mspDir, "signcerts"))
+		exitErr(err)
 		for _, cert := range certs {
 			if strings.HasSuffix(cert.Name(), ".pem") {
 				signCert = filepath.Join(mspDir, "signcerts", cert.Name())

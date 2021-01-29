@@ -105,7 +105,7 @@ func (ctd CrossTxDetail) GetById() (*CrossTxDetail, error) {
 }
 
 func (ctd CrossTxDetail) Update(tx ...*sqlx.Tx) error {
-	row, err := UpdateCrossTxDetailByID(ctd, tx...)
+	row, err := updateCrossTxDetailByID(ctd, tx...)
 	if err != nil {
 		return err
 	}
@@ -235,6 +235,9 @@ func (ctd *CrossTxDetail) CompleteTransferToTx(txID string, t string, tx ...*sql
 func insertCrossTxDetail(ctd CrossTxDetail) (int64, error) {
 	ctd.CreatedAt = time.Now()
 	insertMap, err := Struct2Map(ctd.BaseCrossTxDetail)
+	if err != nil {
+		return 0, err
+	}
 	delete(insertMap, "id")
 
 	result, err := sq.Insert(CrossTxDetailTableName).SetMap(insertMap).RunWith(DB).Exec()
@@ -245,7 +248,7 @@ func insertCrossTxDetail(ctd CrossTxDetail) (int64, error) {
 	return id, err
 }
 
-func UpdateCrossTxDetailByID(ctd CrossTxDetail, tx ...*sqlx.Tx) (int64, error) {
+func updateCrossTxDetailByID(ctd CrossTxDetail, tx ...*sqlx.Tx) (int64, error) {
 	ctd.UpdatedAt = time.Now()
 	updateMap, err := Struct2Map(ctd.UpdateCrossTxDetailModel)
 	updateMap["status"] = ctd.Status
@@ -266,7 +269,7 @@ func UpdateCrossTxDetailByID(ctd CrossTxDetail, tx ...*sqlx.Tx) (int64, error) {
 func GetCrossTxDetailByID(id int64) (*CrossTxDetail, error) {
 	querySql, args, err := sq.Select("*").From(CrossTxDetailTableName).Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 		return nil, err
 	}
 	octd := &originalCrossTxDetail{}
