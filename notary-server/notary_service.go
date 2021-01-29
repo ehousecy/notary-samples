@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	"github.com/ehousecy/notary-samples/notary-server/eth"
 	"github.com/ehousecy/notary-samples/notary-server/fabric"
@@ -78,15 +79,22 @@ func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) 
 func (n *NotaryService) SubmitTx(srv pb.NotaryService_SubmitTxServer) error {
 	recv, err := srv.Recv()
 	if err != nil {
+		NotaryLogPrintf("Build tx failed, %v", err)
 		return err
 	}
 	handler := n.GetHandler(recv.NetworkType)
-	return handler.ConstructAndSignTx(srv, recv)
+	err = handler.ConstructAndSignTx(srv, recv)
+	if err != nil {
+		NotaryLogPrintf("Build tx failed, %v", err)
+		return err
+	}
+	return nil
 }
 
 func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.ListTxResponse, error) {
 	crossTxInfos, err := n.provider.QueryAllCrossTxInfo()
 	if err != nil {
+		NotaryLogPrintf("List tx failed, %v", err)
 		return nil, err
 	}
 	var cts = make([]*pb.CrossTx, 0, len(crossTxInfos))
@@ -101,6 +109,7 @@ func (n *NotaryService) ListTickets(ctx context.Context, in *pb.Empty) (*pb.List
 func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*pb.QueryTxResponse, error) {
 	crossTxInfo, err := n.provider.QueryCrossTxInfoByCID(in.TicketId)
 	if err != nil {
+		NotaryLogPrintf("Get ticket info failed, %v", err)
 		return nil, err
 	}
 	return &pb.QueryTxResponse{
@@ -205,4 +214,12 @@ func (n *NotaryService) TestDial(ctx context.Context, in *pb.Ping) (*pb.Pong, er
 	}, nil
 }
 
+func NotaryloggerPrint(content string) {
+	log.Printf("[Notary service] %s\n", content)
+}
+
+func NotaryLogPrintf(content string, v ...interface{}) {
+	ss := fmt.Sprintf(content, v...)
+	NotaryloggerPrint(ss)
+}
 

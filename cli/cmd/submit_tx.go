@@ -63,7 +63,7 @@ func execSubmitCmd(cmd *cobra.Command, args []string) {
 		execFabricSubmit(ticketID, privateKey)
 	} else {
 		client := grpc.NewClient()
-		stream, err := client.SubmitTx(context.Background(), nil)
+		stream, err := client.SubmitTx(context.Background())
 		if err != nil {
 			log.Printf("Submit transaction failed, %v\n", err)
 			return
@@ -188,6 +188,13 @@ func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_Subm
 	err = stream.Send(&pb.TransferPropertyRequest{
 		Data: signedBytes,
 	})
+	if err != nil {
+		return err
+	}
+	_, err =stream.Recv()
+	if err == io.EOF {
+		return nil
+	}
 	return err
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	common2 "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -133,7 +134,6 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 	if err != nil {
 		return err
 	}
-	e.BuildTx()
 	from := info.EthFrom
 	amount := info.EthAmount
 
@@ -153,9 +153,12 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 
 	// receive signed tx from client
 	signed, err := src.Recv()
+	if err != nil {
+		return err
+	}
 	signedTx := signed.Data
 
-	if !validateWithOrign(rawTx, signedTx) {
+	if validateWithOrign(rawTx, signedTx) {
 		return e.sendTx(ticketId, signedTx)
 	} else {
 		return errors.New("transaction does not Match! ")
@@ -191,7 +194,19 @@ func (e *EthHanlder) ConfirmTx(txHash string) error {
 func validateWithOrign(rawTx, signedTx []byte) bool {
 	raw := decodeTx(rawTx)
 	signed := decodeTx(signedTx)
-	if raw.Hash().String() != signed.Hash().String() {
+	rawBytes, err := txHash(raw)
+	if err != nil {
+		EthLogPrintf("rlp encode raw transaction failed")
+		return false
+	}
+	signedBytes, err := txHash(signed)
+	if err != nil {
+		EthLogPrintf("Failed to encode Signed transaction, %s", err.Error())
+		return false
+	}
+	EthLogPrintf(hexutil.Encode(signedBytes))
+	EthLogPrintf(hexutil.Encode(rawBytes))
+	if hexutil.Encode(signedBytes) != hexutil.Encode(rawBytes) {
 		return false
 	}
 	return true
@@ -204,6 +219,18 @@ func decodeTx(tx []byte) *types.Transaction {
 		return nil
 	}
 	return decoded
+}
+
+// encode transaction into bytes
+func txHash(tx *types.Transaction)  ([]byte,error) {
+	return rlp.EncodeToBytes([]interface{}{
+		tx.Nonce(),
+		tx.GasPrice(),
+		tx.Gas(),
+		tx.To(),
+		tx.Value(),
+		tx.Data(),
+	})
 }
 
 // construct ethereum transaction base on from/to/amount/
