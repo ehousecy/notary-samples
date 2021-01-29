@@ -42,6 +42,8 @@ func NewMonitor(url string) *EthMonitor {
 	if err != nil {
 		return nil
 	}
+	id, _ := c.NetworkID(context.Background())
+	EthLogPrintf("Ethereum network Id: %s", id.String())
 	return &EthMonitor{
 		Client:      c,
 		DBInterface: db,
@@ -145,8 +147,10 @@ func (m *EthMonitor) confirmBlock(targetHeight *big.Int) {
 	for iter.Next() {
 		val := iter.Value()
 		txHeight.SetBytes(val)
+		txHash := fmt.Sprintf("%s", iter.Key())
+		EthLogPrintf("confirming tx, hash %s, height %s", txHash, txHeight)
 		if txHeight.Cmp(targetHeight) <= 0 {
-			txHash := fmt.Sprintf("%x", iter.Key())
+
 			m.validateReceipt(txHash, targetHeight)
 		}
 	}
@@ -204,6 +208,8 @@ func (m *EthMonitor) notify(txhash string, isSuccess bool) error {
 			sub <- txEvent
 		}
 	}
+	EthLogPrintf("send out tx confirm event, tx id: %s", txhash)
+	m.RemoveTx(txhash)
 	return nil
 }
 

@@ -2,13 +2,11 @@ package eth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
 	pb "github.com/ehousecy/notary-samples/proto"
 	common2 "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -119,11 +117,7 @@ func (e *EthHanlder) SignAndSendTx(ticketId string, rawData []byte) error {
 		EthLogPrintf("Failed sign transaction, %v", err)
 		return err
 	}
-	signedByte, err := rlp.EncodeToBytes(signed)
-	if err != nil {
-		return err
-	}
-	return e.sendTx(ticketId, signedByte)
+	return e.sendTx(ticketId, signed)
 }
 
 // construct and sign transactions for user
@@ -138,14 +132,15 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 	amount := info.EthAmount
 
 	// build raw transaction from notary service
-	rawTx := e.BuildTx(from, NotaryAddress, amount)
-	if len(rawTx) == 0 {
-		return errors.New("build tx failed")
-	}
+	e.BuildTx()
+	rawTx := e.buildTx(from, NotaryAddress, amount)
 
+	chainId, _ := e.client.NetworkID(context.Background())
+	signer := types.NewEIP155Signer(chainId)
+	h := signer.Hash(rawTx)
 	err = src.Send(&pb.TransferPropertyResponse{
 		Error:  nil,
-		TxData: rawTx,
+		TxData: h.Bytes(),
 	})
 	if err != nil {
 		return err
@@ -156,13 +151,13 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 	if err != nil {
 		return err
 	}
-	signedTx := signed.Data
-
-	if validateWithOrign(rawTx, signedTx) {
-		return e.sendTx(ticketId, signedTx)
-	} else {
-		return errors.New("transaction does not Match! ")
+	signature := signed.Data
+	tx, err := rawTx.WithSignature(signer, signature)
+	if err != nil {
+		EthLogPrintf("Sign tx failed, %v", err)
+		return err
 	}
+	return e.sendTx(ticketId, tx)
 }
 
 // approve a cross transaction
@@ -191,49 +186,50 @@ func (e *EthHanlder) ConfirmTx(txHash string) error {
 
 // helper functions
 
-func validateWithOrign(rawTx, signedTx []byte) bool {
-	raw := decodeTx(rawTx)
-	signed := decodeTx(signedTx)
-	rawBytes, err := txHash(raw)
+// sign transactions using private key
+func (e *EthHanlder) signTx(priv string, tx *types.Transaction) *types.Transaction {
+	privateKey, err := crypto.HexToECDSA(priv)
 	if err != nil {
-		EthLogPrintf("rlp encode raw transaction failed")
-		return false
-	}
-	signedBytes, err := txHash(signed)
-	if err != nil {
-		EthLogPrintf("Failed to encode Signed transaction, %s", err.Error())
-		return false
-	}
-	EthLogPrintf(hexutil.Encode(signedBytes))
-	EthLogPrintf(hexutil.Encode(rawBytes))
-	if hexutil.Encode(signedBytes) != hexutil.Encode(rawBytes) {
-		return false
-	}
-	return true
-}
-
-// decode transaction from bytes
-func decodeTx(tx []byte) *types.Transaction {
-	var decoded *types.Transaction
-	if err := rlp.DecodeBytes(tx, &decoded); err != nil {
+		EthLogPrintf("Invalid private key: %v\n", err)
 		return nil
 	}
-	return decoded
+	chainId, err := e.client.NetworkID(context.Background())
+	if err != nil {
+		log.Printf("Failed to get chain-ID %v\n", err)
+		return nil
+	}
+	signed, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privateKey)
+
+	if err != nil {
+		log.Printf("Sign transaction failed %v\n", err)
+		return nil
+	}
+	return signed
 }
 
-// encode transaction into bytes
-func txHash(tx *types.Transaction)  ([]byte,error) {
-	return rlp.EncodeToBytes([]interface{}{
-		tx.Nonce(),
-		tx.GasPrice(),
-		tx.Gas(),
-		tx.To(),
-		tx.Value(),
-		tx.Data(),
-	})
+// send transaction
+func (e *EthHanlder) sendTx(ticketId string, signed *types.Transaction) error {
+
+	err := e.client.SendTransaction(context.Background(), signed)
+	if err != nil {
+		return err
+	}
+	txHash := signed.Hash().String()
+	provider.CreateTransferFromTx(ticketId, txHash, constant.TypeEthereum)
+	return e.monitor.AddTxRecord(txHash)
 }
 
-// construct ethereum transaction base on from/to/amount/
+// validate private key and derive public key
+func EthloggerPrint(content string) {
+	log.Printf("[Eth handler] %s\n", content)
+}
+
+func EthLogPrintf(content string, v ...interface{}) {
+	ss := fmt.Sprintf(content, v...)
+	EthloggerPrint(ss)
+}
+
+// build tx
 func (e *EthHanlder) buildTx(from, to, amount string) *types.Transaction {
 
 	fromAddr := common2.HexToAddress(from)
@@ -261,46 +257,4 @@ func (e *EthHanlder) buildTx(from, to, amount string) *types.Transaction {
 	return tx
 }
 
-// sign transactions using private key
-func (e *EthHanlder) signTx(priv string, tx *types.Transaction) *types.Transaction {
-	privateKey, err := crypto.HexToECDSA(priv)
-	if err != nil {
-		log.Printf("Invalid private key: %v\n", err)
-		return nil
-	}
-	chainId, err := e.client.NetworkID(context.Background())
-	if err != nil {
-		log.Printf("Failed to get chain-ID %v\n", err)
-		return nil
-	}
-	signed, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privateKey)
 
-	if err != nil {
-		log.Printf("Sign transaction failed %v\n", err)
-		return nil
-	}
-	return signed
-}
-
-// send transaction
-func (e *EthHanlder) sendTx(ticketId string, signed []byte) error {
-
-	tx := decodeTx(signed)
-	err := e.client.SendTransaction(context.Background(), tx)
-	if err != nil {
-		return err
-	}
-	txHash := tx.Hash().String()
-	provider.CreateTransferFromTx(ticketId, txHash, constant.TypeEthereum)
-	return e.monitor.AddTxRecord(txHash)
-}
-
-// validate private key and derive public key
-func EthloggerPrint(content string) {
-	log.Printf("[Eth handler] %s\n", content)
-}
-
-func EthLogPrintf(content string, v ...interface{}) {
-	ss := fmt.Sprintf(content, v...)
-	EthloggerPrint(ss)
-}

@@ -10,13 +10,6 @@ print "starting ethereum node..."
 nohup geth --http --http.addr 127.0.0.1 --http.port 8545 --ws --ws.port 3334 --nodiscover --dev &
 print "geth started successfully..."
 
-until test -e /tmp/geth.ipc
-do
-    echo "waiting node initialize..."
-    sleep 2
-done
-
-
 echo "geth successfully started!"
 
 

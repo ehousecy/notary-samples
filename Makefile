@@ -13,7 +13,7 @@ build:
 	@echo "building server and client ..."
 	@go build -o ./build/notary-server ./notary-server/.
 	@go build -o ./build/notary-cli ./cli/.
-#	@cp ./notary-server/fabric/business/impl/config.yaml $(HOME)/.notary-samples/
+	@cp ./notary-server/fabric/business/impl/config.yaml $(HOME)/.notary-samples/
 	@echo "Finished compiling"
 
 # install necessary binaries

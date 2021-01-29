@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -14,12 +15,10 @@ import (
 	"log"
 
 	"errors"
-	"fmt"
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"math/big"
 )
 
 // this file implement the folowing cmd
@@ -175,7 +174,11 @@ type EthBuilder struct {
 }
 
 func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_SubmitTxClient) error {
-	err := stream.Send(&pb.TransferPropertyRequest{
+	privKey, err := crypto.HexToECDSA(priv)
+	if err != nil {
+		return errors.New("Invalid private key ")
+	}
+	err = stream.Send(&pb.TransferPropertyRequest{
 		CTxId:       ticketId,
 		NetworkType: pb.TransferPropertyRequest_eth,
 	})
@@ -191,28 +194,15 @@ func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_Subm
 	if src.Error != nil {
 		return errors.New(src.Error.ErrMsg)
 	}
-	txRawData := src.TxData
-	tx := decodeTx(txRawData)
-	if tx == nil {
-		errMsg := fmt.Sprintf("Invalid transaction data：[%x]", txRawData)
-		return errors.New(errMsg)
-	}
-	privKey, err := crypto.HexToECDSA(priv)
-	if err != nil {
-		return errors.New("Invalid private key ")
-	}
-	chainId := new(big.Int).SetUint64(1)
-	signed, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privKey)
-	if err != nil {
-		return err
-	}
-
-	signedBytes, err := rlp.EncodeToBytes(signed)
+	txContent := src.TxData
+	var h common.Hash
+	h.SetBytes(txContent)
+	sig, err := crypto.Sign(h[:], privKey)
 	if err != nil {
 		return err
 	}
 	err = stream.Send(&pb.TransferPropertyRequest{
-		Data: signedBytes,
+		Data: sig,
 	})
 	if err != nil {
 		return err
