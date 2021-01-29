@@ -36,7 +36,6 @@ var txHandlerInstance *txHandler
 var once sync.Once
 
 func NewFabricHandler() *txHandler {
-	//todo: 查询待确认交易列表
 	once.Do(func() {
 		handler := txHandler{db: services.NewCrossTxDataServiceProvider(),
 			bl:           services.NewFabricBlockLogServiceProvider(),
@@ -75,6 +74,9 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 		return err
 	}
 	proposalBytes, err := proto.Marshal(proposal.Proposal)
+	if err != nil {
+		return err
+	}
 	//发送proposal到客户端进行签名，srv.Send()
 	if err := srv.Send(&pb.TransferPropertyResponse{TxData: proposalBytes}); err != nil {
 		return err
@@ -132,7 +134,6 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 	_, err = c.SendSignedEnvelopTx(signedEnvelope)
 	if err != nil {
 		deleteTxID(crossTxInfo.FabricChannel, string(proposal.TxnID))
-		//todo:取消创建交易
 		th.db.CancelTransferTx(string(proposal.TxnID))
 		return err
 	}

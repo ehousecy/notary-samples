@@ -31,7 +31,7 @@ func TestTxDetail_Save(t *testing.T) {
 }
 
 func TestTxDetail_CompleteTransferFromTx(t *testing.T) {
-	td, err := GetTxDetailByFromTxID(fromTxID)
+	td, err := GetTxDetailByTxID(fromTxID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestTxDetail_CompleteTransferFromTx(t *testing.T) {
 }
 
 func TestTxDetail_BoundTransferToTx(t *testing.T) {
-	td, err := GetTxDetailByFromTxID(fromTxID)
+	td, err := GetTxDetailByTxID(fromTxID)
 	if err != nil {
 		t.Fatal(err)
 	}

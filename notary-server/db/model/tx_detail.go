@@ -64,8 +64,8 @@ func init() {
 		type VARCHAR(64) NULL,
 		cross_tx_id INTEGER,
 		channel_id VARCHAR(64) default '',
-		from_tx_id VARCHAR(64) NULL,
-		to_tx_id VARCHAR(64) NULL,
+		from_tx_id VARCHAR(64) UNIQUE NULL,
+		to_tx_id VARCHAR(64) UNIQUE NULL,
 		from_tx_create_at TIMESTAMP NULL,
 		to_tx_create_at timestamp NULL,
 		from_tx_finish_at timestamp NULL,
@@ -212,6 +212,9 @@ func (td *TxDetail) Update(tx ...*sqlx.Tx) error {
 
 func insertTxDetail(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 	insertMap, err := Struct2Map(td.BaseTxDetail)
+	if err != nil {
+		return 0, err
+	}
 	delete(insertMap, "id")
 	insertMap["from_tx_id"] = td.FromTxID
 	insertMap["from_tx_create_at"] = td.FromTxCreateAt
@@ -232,7 +235,13 @@ func insertTxDetail(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 
 func updateTxDetailByID(td TxDetail, tx ...*sqlx.Tx) (int64, error) {
 	update, err := Struct2Map(td.UpdateTxDetailModel)
+	if err != nil {
+		return 0, err
+	}
 	update["tx_status"] = td.TxStatus
+	if td.UpdateTxDetailModel.ToTxID == "" {
+		delete(update, "to_tx_id")
+	}
 	updateBuilder := sq.Update(TxDetailTableName).SetMap(update).Where(sq.Eq{"id": td.ID})
 	var result sql.Result
 	if len(tx) > 0 {
@@ -261,13 +270,14 @@ func getByCTxIDAndTypeAndStatus(cid int64, t string, status string) (*TxDetail, 
 func execGetSql(builder sq.SelectBuilder, cid ...int64) (*TxDetail, error) {
 	querySql, args, err := builder.ToSql()
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 		return nil, err
 	}
 	td := &originalTxDetail{}
 	err = DB.Get(td, querySql, args...)
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
+		return nil, err
 	}
 	if len(cid) > 0 && td.CrossTxID != cid[0] {
 		return nil, errors.New("交易id不匹配")
@@ -278,13 +288,14 @@ func execGetSql(builder sq.SelectBuilder, cid ...int64) (*TxDetail, error) {
 func execSelectSql(builder sq.SelectBuilder) ([]*TxDetail, error) {
 	querySql, args, err := builder.ToSql()
 	if err != nil {
-		log.Panicln(err)
+		log.Println(err)
 		return nil, err
 	}
 	var otd []*originalTxDetail
 	err = DB.Select(&otd, querySql, args...)
 	if err != nil {
 		log.Println(err)
+		return nil, err
 	}
 	return convertOriginalTxDetailArr(otd), err
 }
@@ -292,16 +303,6 @@ func execSelectSql(builder sq.SelectBuilder) ([]*TxDetail, error) {
 func GetTxDetailByCTxID(cid ...int64) ([]*TxDetail, error) {
 	builder := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"cross_tx_id": cid})
 	return execSelectSql(builder)
-}
-
-func GetTxDetailByFromTxID(txID string, cid ...int64) (*TxDetail, error) {
-	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"from_tx_id": txID})
-	return execGetSql(getSql, cid...)
-}
-
-func GetTxDetailByToTxID(txID string, cid ...int64) (*TxDetail, error) {
-	getSql := sq.Select("*").From(TxDetailTableName).Where(sq.Eq{"to_tx_id": txID})
-	return execGetSql(getSql, cid...)
 }
 
 func GetConfirmingTxDetailByType(txType string) ([]*TxDetail, error) {

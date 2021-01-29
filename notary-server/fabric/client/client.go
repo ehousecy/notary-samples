@@ -18,7 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"log"
+	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
@@ -157,12 +157,13 @@ func (c *Client) CreateTransactionPayload(request channel.Request, signedProposa
 	requestContext := &invoke.RequestContext{Response: invoke.Response{},
 		Opts: invoke.Opts{}, Request: invoke.Request(request), Ctx: reqCtx}
 
-	_, requestContext.Opts.Targets, err = sdkutil.GetEndorsers(requestContext, clientContext)
-
+	if _, requestContext.Opts.Targets, err = sdkutil.GetEndorsers(requestContext, clientContext); err != nil {
+		return nil, err
+	}
 	defer cancel()
 	transactionProposalResponses, err := sdkutil.SendSignedProposal(reqCtx, signedProposal, peer.PeersToTxnProcessors(requestContext.Opts.Targets))
 	if err != nil {
-		log.Fatalf("发送签名Proposal失败")
+		return nil, errors.Wrap(err, "发送签名Proposal失败")
 	}
 
 	proposal := &pb.Proposal{}
@@ -178,19 +179,19 @@ func (c *Client) CreateTransactionPayload(request channel.Request, signedProposa
 
 	_, err = sdkutil.HandleProposalResponse(requestContext, clientContext)
 	if err != nil {
-		log.Fatalf("处理ProposalResponse失败, err=%v", err)
+		return nil, errors.Wrap(err, "处理ProposalResponse失败")
 	}
 
 	//6.创建交易
 	tx, err := sdkutil.CreateTransaction(txProposal, transactionProposalResponses)
 	if err != nil {
-		log.Fatalf("创建交易失败, err=%v", err)
+		return nil, errors.Wrap(err, "创建交易失败")
 	}
 
 	//7.创建payload
 	payload, err := sdkutil.CreatePayload(tx)
 	if err != nil {
-		log.Fatalf("创建payload失败, err=%v", err)
+		return nil, errors.Wrap(err, "创建payload失败")
 	}
 	payloadBytes, err := proto.Marshal(payload)
 

@@ -153,6 +153,7 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 
 	// receive signed tx from client
 	signed, err := src.Recv()
+	//todo:err
 	signedTx := signed.Data
 
 	if !validateWithOrign(rawTx, signedTx) {
@@ -173,6 +174,7 @@ func (e *EthHanlder) Approve(ticketId string) error {
 
 	rawTx := e.BuildTx(NotaryAddress, ticketInfo.EthTo, ticketInfo.EthAmount)
 	err = e.SignAndSendTx(ticketId, rawTx)
+	//todo:err
 	return nil
 }
 

@@ -36,6 +36,9 @@ func InsertFabricBlockLog(blockNumber uint64, channelID string) {
 		HandleTime:  time.Now(),
 	}
 	insertMap, err := Struct2Map(blockLog)
+	if err != nil {
+		log.Panicf("add fabric block log record fail, err=%v", err)
+	}
 	delete(insertMap, "id")
 
 	result, err := sq.Insert(FabricBlockLogTableName).SetMap(insertMap).RunWith(DB).Exec()
@@ -58,6 +61,9 @@ func QueryLastFabricBlockNumber(channelID string) (uint64, error) {
 	}
 	var blockNumber sql.NullInt64
 	err = DB.Get(&blockNumber, qSql, args...)
+	if err != nil {
+		return 0, err
+	}
 	var num = uint64(blockNumber.Int64)
 	return num, err
 }
