@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
+	"log"
 	"sync"
 )
 
@@ -49,7 +50,7 @@ func NewFabricHandler() *txHandler {
 }
 
 func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
-	fmt.Println("开始fabric交易")
+	log.Printf("开始 fabric 交易, ticketID:%s", recv.CTxId)
 	//通过ticketId查询跨链交易信息
 	crossTxInfo, err := th.db.QueryCrossTxInfoByCID(recv.CTxId)
 	if err != nil {
@@ -75,8 +76,7 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 	}
 	proposalBytes, err := proto.Marshal(proposal.Proposal)
 	//发送proposal到客户端进行签名，srv.Send()
-	err = srv.Send(&pb.TransferPropertyResponse{TxData: proposalBytes})
-	if err != nil {
+	if err := srv.Send(&pb.TransferPropertyResponse{TxData: proposalBytes}); err != nil {
 		return err
 	}
 
@@ -85,6 +85,7 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 	if err != nil {
 		return err
 	}
+	log.Printf("处理 fabric 交易：proposal签名完成, ticketID:%s", crossTxInfo.ID)
 	//构造交易Payload
 	signedProposal := &peer.SignedProposal{
 		ProposalBytes: proposalBytes,
@@ -95,8 +96,7 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 		return err
 	}
 	//发送交易Payload到客户端进行签名,srv.Send()
-	err = srv.Send(&pb.TransferPropertyResponse{TxData: payloadBytes})
-	if err != nil {
+	if err := srv.Send(&pb.TransferPropertyResponse{TxData: payloadBytes}); err != nil {
 		return err
 	}
 	//接收SignedEnvelope,srv.Recv()
@@ -116,16 +116,10 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 	if !ok {
 		return errors.New("签名验证失败")
 	}
+	log.Printf("处理 fabric 交易：交易签名完成, ticketID:%s, txID:%v", crossTxInfo.ID, proposal.TxnID)
 	//保存交易id到db
-	err = th.db.CreateTransferFromTx(crossTxInfo.ID, string(proposal.TxnID), constant.TypeFabric)
-	if err != nil {
+	if err := th.db.CreateTransferFromTx(crossTxInfo.ID, string(proposal.TxnID), constant.TypeFabric); err != nil {
 		fmt.Printf("保存交易错误, err=%v", err)
-		return err
-	}
-	//发送SignedEnvelope到orderer
-	fmt.Println("发送fabric交易")
-	_, err = c.SendSignedEnvelopTx(signedEnvelope)
-	if err != nil {
 		return err
 	}
 	//将验证交易id放到map中
@@ -133,7 +127,20 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 		ticketId:    crossTxInfo.ID,
 		isOfflineTx: true,
 	})
-	fmt.Println("结束fabric交易")
+	//发送SignedEnvelope到orderer
+	log.Printf("发送 fabric 交易, ticketID:%s, txID:%v", crossTxInfo.ID, proposal.TxnID)
+	_, err = c.SendSignedEnvelopTx(signedEnvelope)
+	if err != nil {
+		deleteTxID(crossTxInfo.FabricChannel, string(proposal.TxnID))
+		//todo:取消创建交易
+		th.db.CancelTransferTx(string(proposal.TxnID))
+		return err
+	}
+	if err := srv.Send(&pb.TransferPropertyResponse{TxData: []byte(fmt.Sprintf("fabric 交易发送成功, tx:%v", proposal.TxnID))}); err != nil {
+		return err
+	}
+
+	log.Printf("成功发送 fabric 交易, ticketID:%s, txID:%v", crossTxInfo.ID, proposal.TxnID)
 	return nil
 }
 
@@ -147,6 +154,12 @@ func putTxID(channelID, txID string, ti txInfo) {
 	}
 	txMap[txID] = ti
 }
+func deleteTxID(channelID, txID string) {
+	txMap, ok := confirmingTxIDMap[channelID]
+	if ok {
+		delete(txMap, txID)
+	}
+}
 
 func (th *txHandler) Approve(ticketId string) error {
 
@@ -155,6 +168,10 @@ func (th *txHandler) Approve(ticketId string) error {
 	if err != nil {
 		return err
 	}
+	if err = th.db.ValidateEnableBoundTransferToTx(crossTxInfo.FabricTx.FromTxID, nil); err != nil {
+		return err
+	}
+	log.Printf("开始 fabric 代理交易, ticketID:%s", ticketId)
 	request, err := th.bs.CreateToRequest(crossTxInfo.FabricChannel, business.RequestParams{
 		ChaincodeName: crossTxInfo.FabricChaincode,
 		Asset:         crossTxInfo.FabricAmount,
@@ -170,26 +187,26 @@ func (th *txHandler) Approve(ticketId string) error {
 	}
 
 	//验证是否能交易
-	if err = th.db.ValidateEnableBoundTransferToTx(crossTxInfo.FabricTx.FromTxID, nil); err != nil {
-		return err
-	}
 	txID, signedEnvelope, err := c.CreateTransaction(*request)
 	if err != nil {
 		return err
 	}
+	log.Printf("发送 fabric 代理交易, ticketID:%s, txID:%s", ticketId, txID)
 	if err = th.db.BoundTransferToTx(crossTxInfo.FabricTx.FromTxID, txID); err != nil {
-		return err
-	}
-
-	//发送交易
-	if _, err = c.SendSignedEnvelopTx(signedEnvelope); err != nil {
-		//todo:取消交易绑定
 		return err
 	}
 	putTxID(crossTxInfo.FabricChannel, txID, txInfo{
 		ticketId:    crossTxInfo.ID,
 		isOfflineTx: false,
 	})
+	//发送交易
+	if _, err = c.SendSignedEnvelopTx(signedEnvelope); err != nil {
+		log.Printf("失败发送 fabric 代理交易, ticketID:%s, txID:%s, err:%v", ticketId, txID, err)
+		deleteTxID(crossTxInfo.FabricChannel, txID)
+		th.db.CancelTransferTx(txID)
+		return err
+	}
+	log.Printf("成功发送 fabric 代理交易, ticketID:%s, txID:%s", ticketId, txID)
 
 	return nil
 }
@@ -219,10 +236,12 @@ func (th *txHandler) handleTx(channelID string, ft *peer.FilteredTransaction) {
 	}
 
 	if ft.TxValidationCode != peer.TxValidationCode_VALID {
-		//todo:交易无效修改跨链交易记录
+		th.db.FailTransferTx(ft.Txid)
+		_ = th.db.ValidateEnableBoundTransferToTx(ft.Txid, th.ticketIDChan)
 	} else {
 		err := th.db.CompleteTransferTx(ft.Txid)
 		if err != nil {
+			log.Printf("完成交易失败, txid=%v, err=%v\n", ft.Txid, err)
 			return
 		}
 		if info.isOfflineTx {

@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"github.com/jmoiron/sqlx"
@@ -100,13 +101,16 @@ func ValidateExistedValidTxDetailCIDAndType(cid int64, txType string) (bool, err
 func NewTransferFromTx(ctd *CrossTxDetail, txType string, txID string) TxDetail {
 	amount := ctd.FabricAmount
 	txFrom := ctd.FabricFrom
+	txTo := ctd.FabricTo
 	if txType == constant.TypeEthereum {
 		amount = ctd.EthAmount
 		txFrom = ctd.EthFrom
+		txTo = ctd.EthTo
 	}
 	td := TxDetail{
 		BaseTxDetail: BaseTxDetail{
 			TxFrom:    txFrom,
+			TxTo:      txTo,
 			Amount:    amount,
 			TxStatus:  constant.TxStatusFromCreated,
 			Type:      txType,
@@ -169,6 +173,39 @@ func (td *TxDetail) CompleteTransferToTx(tx *sqlx.Tx) error {
 	}
 	if rows != 1 {
 		return errors.New("完成转账交易失败")
+	}
+	return nil
+}
+
+func (td *TxDetail) Delete(tx ...*sqlx.Tx) error {
+	builder := sq.Delete(TxDetailTableName).Where(sq.Eq{"id": td.ID})
+	var runner sq.BaseRunner
+	if len(tx) > 0 {
+		runner = tx[0]
+	} else {
+		runner = DB
+	}
+	result, err := builder.RunWith(runner).Exec()
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return fmt.Errorf("删除交易失败, id=%v", td.ID)
+	}
+	return nil
+}
+
+func (td *TxDetail) Update(tx ...*sqlx.Tx) error {
+	rows, err := updateTxDetailByID(*td, tx...)
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return errors.New("更新交易失败")
 	}
 	return nil
 }

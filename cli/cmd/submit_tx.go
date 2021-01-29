@@ -3,10 +3,12 @@ package cmd
 import (
 	"context"
 	"io"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 
 	"github.com/ehousecy/notary-samples/cli/fabutil"
 	"github.com/ehousecy/notary-samples/cli/grpc"
-	"github.com/ehousecy/notary-samples/proto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
@@ -33,8 +35,9 @@ const (
 	subPrivKey    = "subPrivKey"
 	subNetworkKey = "subNetworkKey"
 
-	subCertKey = "subCertKey"
-	subMSPKey  = "subMSPKey"
+	subCertKey   = "subCertKey"
+	subMSPKey    = "subMSPKey"
+	subMSPDirKey = "subMSPDirKey"
 
 	ETHType    = "ethereum"
 	FabricType = "fabric"
@@ -43,13 +46,15 @@ const (
 func init() {
 	err := addStringOption(submitTxCmd, subTicketKey, ticketIdOption, "", "", ticketDescription, required)
 	exitErr(err)
-	err = addStringOption(submitTxCmd, subPrivKey, privateKeyOption, "", "", privateKeyDescription, required)
+	err = addStringOption(submitTxCmd, subPrivKey, privateKeyOption, "p", "", privateKeyDescription, optional)
 	exitErr(err)
-	err = addStringOption(submitTxCmd, subNetworkKey, networkTypeOption, "", "", networkDescription, required)
+	err = addStringOption(submitTxCmd, subNetworkKey, networkTypeOption, "t", "", networkDescription, required)
 	exitErr(err)
-	err = addStringOption(submitTxCmd, subCertKey, signCertOption, "", "", signCertDescription, optional)
+	err = addStringOption(submitTxCmd, subCertKey, signCertOption, "c", "", signCertDescription, optional)
 	exitErr(err)
 	err = addStringOption(submitTxCmd, subMSPKey, mspIDOption, "", "", mspIDDescription, optional)
+	exitErr(err)
+	err = addStringOption(submitTxCmd, subMSPDirKey, mspPathOption, "", "", mspPathDescription, optional)
 	exitErr(err)
 }
 
@@ -88,27 +93,50 @@ type TxBuilder interface {
 }
 
 func execFabricSubmit(ticketID, privateKeyPath string) {
+	log.Println("start transfer FabricSubmitTx method=====================")
+	mspDir := viper.GetString(subMSPDirKey)
 	signCert := viper.GetString(subCertKey)
 	mspID := viper.GetString(subMSPKey)
-	if signCert == "" {
-		log.Fatalf("submit fabric tx %s is necessary", signCertOption)
-	}
 	if mspID == "" {
-		log.Fatalf("submit fabric tx %s is necessary", mspIDOption)
+		log.Fatalf("submit fabric tx mspid is necessary, please use --%v specify", mspIDOption)
 	}
-	client := grpc.NewClient()
-	srv, err := client.SubmitTx(context.Background())
-	exitErr(err)
+	if mspDir != "" {
+		pkDir, err := ioutil.ReadDir(filepath.Join(mspDir, "keystore"))
+		exitErr(err)
+		for _, file := range pkDir {
+			if strings.HasSuffix(file.Name(), "_sk") {
+				privateKeyPath = filepath.Join(mspDir, "keystore", file.Name())
+				break
+			}
+		}
+		certs, err := ioutil.ReadDir(filepath.Join(mspDir, "signcerts"))
+		for _, cert := range certs {
+			if strings.HasSuffix(cert.Name(), ".pem") {
+				signCert = filepath.Join(mspDir, "signcerts", cert.Name())
+				break
+			}
+		}
+	}
+	if signCert == "" {
+		log.Fatalf("submit fabric tx sign cert is necessary, please use --%s or -c specify, or use --%s specify msp dir path", signCertOption, mspPathOption)
+	}
+	if privateKeyPath == "" {
+		log.Fatalf("submit fabric tx private key is necessary, please use --%s or -p specify, or use --%s specify msp dir path", privateKeyOption, mspPathOption)
+	}
 	//获取creator
 	creator, err := fabutil.GetCreator(mspID, signCert)
 	exitErr(err)
 	//获取签名
 	privateKey, err := fabutil.GetPrivateKey(privateKeyPath)
 	exitErr(err)
-	err = srv.Send(&proto.TransferPropertyRequest{
+
+	client := grpc.NewClient()
+	srv, err := client.SubmitTx(context.Background())
+	exitErr(err)
+	err = srv.Send(&pb.TransferPropertyRequest{
 		Data:        creator,
 		CTxId:       ticketID,
-		NetworkType: proto.TransferPropertyRequest_fabric,
+		NetworkType: pb.TransferPropertyRequest_fabric,
 	})
 	exitErr(err)
 	var i = 1
@@ -119,20 +147,18 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 		}
 		exitErr(err)
 		if i <= 2 {
-			fmt.Printf("第[%v]次收到消息:%v", i, string(recv.TxData))
 			//签名proposal
 			sign, err := fabutil.Sign(recv.TxData, privateKey)
 			exitErr(err)
-			err = srv.Send(&proto.TransferPropertyRequest{Data: sign})
+			err = srv.Send(&pb.TransferPropertyRequest{Data: sign})
 			exitErr(err)
 			i++
+		} else {
+			log.Println(string(recv.TxData))
 		}
 	}
-
-	// err = srv.CloseSend()
-	// exitErr(err)
+	_ = srv.CloseSend()
 	log.Println("end transfer FabricSubmitTx method=====================")
-
 }
 
 func NewTxBuilder(txType string) TxBuilder {

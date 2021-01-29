@@ -124,9 +124,12 @@ func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (
 	switch in.Op {
 	case pb.TicketOps_approve:
 		err := n.approveCtx(ticketId)
-		pbErr := &pb.Error{
-			Code:   -1,
-			ErrMsg: err.Error(),
+		var pbErr *pb.Error = nil
+		if err != nil {
+			pbErr = &pb.Error{
+				Code:   -1,
+				ErrMsg: err.Error(),
+			}
 		}
 		return &pb.AdminOpTicketResp{
 			Err: pbErr,
@@ -222,4 +225,3 @@ func NotaryLogPrintf(content string, v ...interface{}) {
 	ss := fmt.Sprintf(content, v...)
 	NotaryloggerPrint(ss)
 }
-

@@ -29,6 +29,7 @@ const (
 	networkTypeOption = "network-type"
 	signCertOption    = "sign-cert"
 	mspIDOption       = "msp-id"
+	mspPathOption     = "msp-path"
 )
 
 // option description or command description
@@ -43,6 +44,7 @@ const (
 	networkDescription    = "On which blockchain network this transaction is sending to, ie. ethereum, fabric, btc"
 	signCertDescription   = "Sign cert provide truly public key verification signature, fabric is necessary"
 	mspIDDescription      = "fabric MSP ID"
+	mspPathDescription    = "fabric MSP path, if specifying this parameter will overwrite private-key and sign-cert"
 )
 const (
 	required = true

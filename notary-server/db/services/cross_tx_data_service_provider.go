@@ -92,28 +92,8 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 	return nil
 }
 
-func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferFromTx(txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(txID)
-	if err != nil {
-		return err
-	}
-	return validateEnableCompleteTransferFromTx(ctd, td)
-}
-
-func (cts CrossTxDataServiceProvider) CompleteTransferFromTx(txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(txID)
-	if err != nil {
-		return err
-	}
-	err = completeTransferFromTx(td, ctd, txID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(boundTxID string, cIDChan chan string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(boundTxID)
+	ctd, td, err := getCrossTxDetailAndTxDetailByTxID(boundTxID)
 	if err != nil {
 		return err
 	}
@@ -124,7 +104,7 @@ func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(boundTxID 
 }
 
 func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByFromTxID(boundTxID)
+	ctd, td, err := getCrossTxDetailAndTxDetailByTxID(boundTxID)
 	if err != nil {
 		return err
 	}
@@ -146,26 +126,6 @@ func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) 
 		return err
 	}
 	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferToTx(txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByToTxID(txID)
-	if err != nil {
-		return err
-	}
-	return validateEnableCompleteTransferToTx(ctd, td)
-}
-
-func (cts CrossTxDataServiceProvider) CompleteTransferToTx(txID string) error {
-	ctd, td, err := getCrossTxDetailAndTxDetailByToTxID(txID)
-	if err != nil {
-		return err
-	}
-	if err := completeTransferToTx(ctd, td, txID); err != nil {
 		return err
 	}
 
@@ -266,6 +226,57 @@ func (cts CrossTxDataServiceProvider) ValidateEnableCompleteTransferTx(txID stri
 	return fmt.Errorf("the tx unable complete, tx=%s, cid=%v", txID, ctd.ID)
 }
 
+func (cts CrossTxDataServiceProvider) CancelTransferTx(txID string) {
+	td, err := model.GetTxDetailByTxID(txID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Printf("取消交易失败, txID=%v, err=%v", txID, err)
+		}
+		return
+	}
+	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
+	if err != nil {
+		log.Printf("取消交易失败, txID=%v, err=%v", txID, err)
+	}
+	if ctd.Status == constant.StatusCreated {
+		//from
+		if err = cancelTransferFromTx(ctd, td, txID); err != nil {
+			log.Printf("取消交易[%s]失败, err=%v", txID, err)
+		}
+	} else if ctd.Status == constant.StatusHosted {
+		//to
+		if err = cancelTransferToTx(ctd, td, txID); err != nil {
+			log.Printf("取消代理交易[%s]失败, err=%v", txID, err)
+		}
+	}
+
+}
+
+func (cts CrossTxDataServiceProvider) FailTransferTx(txID string) {
+	td, err := model.GetTxDetailByTxID(txID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Printf("更新无效交易失败, txID=%v, err=%v", txID, err)
+		}
+		return
+	}
+	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
+	if err != nil {
+		log.Printf("更新无效交易失败, txID=%v, err=%v", txID, err)
+	}
+	if ctd.Status == constant.StatusCreated {
+		//from
+		if err = failTransferFromTx(ctd, td, txID); err != nil {
+			log.Printf("更新无效交易[%s]失败, err=%v", txID, err)
+		}
+	} else if ctd.Status == constant.StatusHosted {
+		//to
+		if err = failTransferToTx(ctd, td, txID); err != nil {
+			log.Printf("更新无效代理交易[%s]失败, err=%v", txID, err)
+		}
+	}
+}
+
 func convertCrossTxBase2CrossTxDetail(ctb CrossTxBase) model.CrossTxDetail {
 	return model.CrossTxDetail{
 		BaseCrossTxDetail: model.BaseCrossTxDetail{
@@ -351,32 +362,6 @@ func stringToInt64(s string) (int64, error) {
 	return strconv.ParseInt(s, 10, 64)
 }
 
-func getCrossTxDetailAndTxDetailByFromTxID(txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
-	td, err := model.GetTxDetailByFromTxID(txID)
-	if err != nil {
-		return nil, nil, err
-	}
-	//1.查询跨链交易和需要绑定的交易
-	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
-	if err != nil {
-		return nil, nil, err
-	}
-	return ctd, td, err
-}
-
-func getCrossTxDetailAndTxDetailByToTxID(txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
-	td, err := model.GetTxDetailByToTxID(txID)
-	if err != nil {
-		return nil, nil, err
-	}
-	//1.查询跨链交易和需要绑定的交易
-	ctd, err := model.GetCrossTxDetailByID(td.CrossTxID)
-	if err != nil {
-		return nil, nil, err
-	}
-	return ctd, td, err
-}
-
 func getCrossTxDetailAndTxDetailByTxID(txID string) (*model.CrossTxDetail, *model.TxDetail, error) {
 	td, err := model.GetTxDetailByTxID(txID)
 	if err != nil {
@@ -457,6 +442,118 @@ func completeTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID str
 		return err
 	}
 
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func cancelTransferFromTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID string) error {
+	//校验状态
+	if td.TxStatus != constant.TxStatusFromCreated && ctd.Status != constant.StatusCreated {
+		return errors.New("取消交易失败，状态校验失败")
+	}
+	tx, err := model.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+	if err := td.Delete(tx); err != nil {
+		return fmt.Errorf("取消交易失败: %v", err.Error())
+	}
+	if ctd.FabricFromTxID == txID {
+		ctd.FabricFromTxID = ""
+	} else if ctd.EthFromTxID == txID {
+		ctd.EthFromTxID = ""
+	}
+	if err = ctd.Update(tx); err != nil {
+		return fmt.Errorf("取消交易失败: %v", err.Error())
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func cancelTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID string) error {
+	//校验状态
+	if td.TxStatus != constant.TxStatusToCreated && ctd.Status != constant.StatusHosted {
+		return errors.New("取消交易失败，状态校验失败")
+	}
+	tx, err := model.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+	if ctd.FabricToTxID == txID {
+		ctd.FabricToTxID = ""
+	} else if ctd.EthToTxID == txID {
+		ctd.EthToTxID = ""
+	}
+	if err = ctd.Update(tx); err != nil {
+		return fmt.Errorf("取消交易失败: %v", err.Error())
+	}
+	td.TxStatus = constant.TxStatusFromFinished
+	td.ToTxID = ""
+	if err = td.Update(tx); err != nil {
+		return fmt.Errorf("取消交易失败: %v", err.Error())
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func failTransferFromTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID string) error {
+	//校验状态
+	if td.TxStatus != constant.TxStatusFromCreated && ctd.Status != constant.StatusCreated {
+		return errors.New("更新无效交易失败，状态校验失败")
+	}
+	tx, err := model.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+	td.TxStatus = constant.TxStatusFromFailed
+	if err := td.Update(tx); err != nil {
+		return fmt.Errorf("更新无效交易失败: %v", err.Error())
+	}
+	if ctd.FabricFromTxID == txID {
+		ctd.FabricFromTxID = ""
+	} else if ctd.EthFromTxID == txID {
+		ctd.EthFromTxID = ""
+	}
+	if err := ctd.Update(tx); err != nil {
+		return fmt.Errorf("更新无效交易失败: %v", err.Error())
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func failTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail, txID string) error {
+	if td.TxStatus != constant.TxStatusToCreated && ctd.Status != constant.StatusHosted {
+		return errors.New("更新无效代理交易失败，状态校验失败")
+	}
+	tx, err := model.DB.Beginx()
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+	if ctd.FabricToTxID == txID {
+		ctd.FabricToTxID = ""
+	} else if ctd.EthToTxID == txID {
+		ctd.EthToTxID = ""
+	}
+	if err = ctd.Update(tx); err != nil {
+		return fmt.Errorf("更新无效代理交易失败: %v", err.Error())
+	}
+	td.TxStatus = constant.TxStatusFromFinished
+	td.ToTxID = ""
+	if err = td.Update(tx); err != nil {
+		return fmt.Errorf("更新无效代理交易失败: %v", err.Error())
+	}
 	if err = tx.Commit(); err != nil {
 		return err
 	}
