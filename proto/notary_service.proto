@@ -14,6 +14,7 @@ service NotaryService {
   rpc GetTicket(QueryTxRequest) returns (QueryTxResponse){}
   rpc OpTicket(AdminOpTicketReq) returns (AdminOpTicketResp) {}
   rpc TestDial(Ping) returns (Pong){} // grpc test purpose
+  rpc QeuryBlock(queryBlockReq) returns(queryBlockResp){}
 }
 
 // empty message, used to fill in the rpc arguments or return types
@@ -66,13 +67,14 @@ message CreateCrossTxResp {
 
 // this request is used for users to send tokens to the verifier/notary
 // in this request, user should specify the target cross transaction id and network type(ether or fabric)
+enum NetworkType{
+  eth = 0;
+  fabric = 1;
+}
+
 message TransferPropertyRequest{
   bytes data = 1; // signed ether transaction data
   string cTxId = 2; // cross transaction id
-  enum NetworkType{
-    eth = 0;
-    fabric = 1;
-  }
   NetworkType networkType = 3;
 }
 
@@ -175,3 +177,12 @@ message AdminOpTicketResp{
   Error err = 1;
 }
 
+
+message queryBlockReq{
+  NetworkType network = 1;
+  string accountId = 2;
+}
+
+message queryBlockResp{
+  string info = 1;
+}
