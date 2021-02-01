@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rlp"
 	"log"
 	"math/big"
 )
@@ -65,10 +64,10 @@ func (e *EthHanlder) loop() {
 
 // build and sign ethereum transaction
 // 3 input fields are required, they are: fromAddress, to, amount
-func (e *EthHanlder) BuildTx(args ...string) []byte {
+func (e *EthHanlder) BuildTx(args ...string) *types.Transaction {
 	if len(args) != 3 {
 		log.Printf("Input error, should input from/to/amount/priv\n")
-		return []byte{}
+		return nil
 	}
 	// validate args and build transactions
 	from := args[0]
@@ -77,46 +76,13 @@ func (e *EthHanlder) BuildTx(args ...string) []byte {
 
 	// if build transaction failed, return empty bytes
 	tx := e.buildTx(from, to, amount)
-	if tx == nil {
-		log.Printf("Build transaction failed!\n")
-		return []byte{}
-	}
-
-	// using rlp encode transaction to bytes
-	rawTxBytes, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		log.Printf("Encode transaction failed: %v\n", err)
-		return []byte{}
-	}
-	return rawTxBytes
+	return tx
 }
 
 // sign transaction and send out to the network, record transaction id locally
-func (e *EthHanlder) SignAndSendTx(ticketId string, rawData []byte) error {
+func (e *EthHanlder) SignAndSendTx(ticketId string, txData *types.Transaction) error {
 	priv := "478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb"
-	privKey, err := crypto.HexToECDSA(priv)
-	if err != nil {
-		EthLogPrintf("Invalid private key, %s", priv)
-		return err
-	}
-	var tx *types.Transaction
-	err = rlp.DecodeBytes(rawData, tx)
-	if err != nil {
-		EthloggerPrint("Invalid transaction data")
-		return err
-	}
-
-	chainId, err := e.client.NetworkID(context.Background())
-	if err != nil {
-		EthLogPrintf("Failed to get chainId %v", err)
-		return err
-	}
-	// sign transaction
-	signed, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privKey)
-	if err != nil {
-		EthLogPrintf("Failed sign transaction, %v", err)
-		return err
-	}
+	signed := e.signTx(priv, txData)
 	return e.sendTx(ticketId, signed)
 }
 
@@ -132,7 +98,6 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 	amount := info.EthAmount
 
 	// build raw transaction from notary service
-	e.BuildTx()
 	rawTx := e.buildTx(from, NotaryAddress, amount)
 
 	chainId, _ := e.client.NetworkID(context.Background())
@@ -172,17 +137,13 @@ func (e *EthHanlder) Approve(ticketId string) error {
 	rawTx := e.BuildTx(NotaryAddress, ticketInfo.EthTo, ticketInfo.EthAmount)
 	err = e.SignAndSendTx(ticketId, rawTx)
 	//todo:err
-	return nil
+	return err
 }
 
 // handle confirm tx event
 func (e *EthHanlder) ConfirmTx(txHash string) error {
 	err := provider.CompleteTransferTx(txHash)
-	if err != nil {
-		return err
-	}
-	key := []byte(txHash)
-	return e.monitor.DBInterface.Delete(key, nil)
+	return err
 }
 
 // helper functions
@@ -196,13 +157,19 @@ func (e *EthHanlder) signTx(priv string, tx *types.Transaction) *types.Transacti
 	}
 	chainId, err := e.client.NetworkID(context.Background())
 	if err != nil {
-		log.Printf("Failed to get chain-ID %v\n", err)
+		EthLogPrintf("Failed to get chain-ID %v\n", err)
 		return nil
 	}
-	signed, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privateKey)
+	signer := types.NewEIP155Signer(chainId)
+	h := signer.Hash(tx)
 
+	sig, err := crypto.Sign(h[:], privateKey)
 	if err != nil {
-		log.Printf("Sign transaction failed %v\n", err)
+		EthLogPrintf("sign tranaction failed: %v", err)
+	}
+	signed, err := tx.WithSignature(signer, sig)
+	if err != nil {
+		EthLogPrintf("append signature failed: %v", err)
 		return nil
 	}
 	return signed

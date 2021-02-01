@@ -46,7 +46,6 @@ func NewMonitor(url string) *EthMonitor {
 		Client:      c,
 		DBInterface: db,
 		done:        make(chan interface{}, 1),
-		subs: make([]chan txConfirmEvent, 200),
 	}
 }
 
@@ -58,9 +57,12 @@ func (m *EthMonitor) Stop() {
 	close(m.done)
 }
 
-func (m *EthMonitor)Subscribe(eventChan chan txConfirmEvent)  {
+func (m *EthMonitor)Subscribe(eventChan chan txConfirmEvent) *EthMonitor {
+	if m.subs == nil {
+		m.subs = make([]chan txConfirmEvent, 0,10)
+	}
 	m.subs = append(m.subs, eventChan)
-	return
+	return m
 }
 
 func (m *EthMonitor) loop() {
@@ -143,7 +145,6 @@ func (m *EthMonitor) confirmBlock(targetHeight *big.Int) {
 		txHash := fmt.Sprintf("%s", iter.Key())
 		EthLogPrintf("confirming tx, hash %s, height %s", txHash, txHeight)
 		if txHeight.Cmp(targetHeight) <= 0 {
-
 			m.validateReceipt(txHash, targetHeight)
 		}
 	}
