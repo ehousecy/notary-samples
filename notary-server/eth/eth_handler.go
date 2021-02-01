@@ -89,6 +89,10 @@ func (e *EthHanlder) SignAndSendTx(ticketId string, txData *types.Transaction) e
 // construct and sign transactions for user
 func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
 	ticketId := recv.CTxId
+	err := provider.ValidateEnableCreateTransferFromTx(ticketId, constant.TypeEthereum)
+	if err != nil {
+		return err
+	}
 	provider := services.NewCrossTxDataServiceProvider()
 	info, err := provider.QueryCrossTxInfoByCID(ticketId)
 	if err != nil {
@@ -128,12 +132,15 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 // approve a cross transaction
 
 func (e *EthHanlder) Approve(ticketId string) error {
-
+	err := provider.ValidateEnableBoundTransferToTx(ticketId, nil)
+	if err != nil {
+		EthLogPrintf("validate failed: %v", err)
+		return err
+	}
 	ticketInfo, err := provider.QueryCrossTxInfoByCID(ticketId)
 	if err != nil {
 		return err
 	}
-
 	rawTx := e.BuildTx(NotaryAddress, ticketInfo.EthTo, ticketInfo.EthAmount)
 	err = e.SignAndSendTx(ticketId, rawTx)
 	//todo:err
