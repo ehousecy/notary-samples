@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/syndtr/goleveldb/leveldb"
 	"math/big"
-	"sync"
 )
 
 // ethereum monitor
@@ -30,7 +29,6 @@ type EthMonitor struct {
 	systemDb    interface{}
 	subs []chan txConfirmEvent
 	done        chan interface{}
-	wg sync.WaitGroup
 }
 
 func NewMonitor(url string) *EthMonitor {
@@ -54,8 +52,6 @@ func NewMonitor(url string) *EthMonitor {
 
 func (m *EthMonitor) Start() {
 	go m.loop()
-	m.wg.Add(1)
-
 }
 
 func (m *EthMonitor) Stop() {
@@ -63,9 +59,6 @@ func (m *EthMonitor) Stop() {
 }
 
 func (m *EthMonitor)Subscribe(eventChan chan txConfirmEvent)  {
-	if len(m.subs) == 0 {
-		m.wg.Done()
-	}
 	m.subs = append(m.subs, eventChan)
 	return
 }
@@ -192,7 +185,6 @@ func (m *EthMonitor) validateReceipt(txHash string, targetHeight *big.Int) {
 		return
 	}
 	receiptRes := isSuccess(txReceipt)
-	m.wg.Wait()
 	m.notify(txHash, receiptRes)
 
 }
