@@ -132,13 +132,13 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 // approve a cross transaction
 
 func (e *EthHanlder) Approve(ticketId string) error {
-	err := provider.ValidateEnableBoundTransferToTx(ticketId, nil)
-	if err != nil {
-		EthLogPrintf("validate failed: %v", err)
-		return err
-	}
 	ticketInfo, err := provider.QueryCrossTxInfoByCID(ticketId)
 	if err != nil {
+		return err
+	}
+	err = provider.ValidateEnableBoundTransferToTx(ticketInfo.EthTx.FromTxID, nil)
+	if err != nil {
+		EthLogPrintf("validate failed: %v", err)
 		return err
 	}
 	rawTx := e.BuildTx(NotaryAddress, ticketInfo.EthTo, ticketInfo.EthAmount)
@@ -155,7 +155,7 @@ func (e *EthHanlder) ConfirmTx(txHash string) error {
 
 // query account info
 
-func (e *EthHanlder)QueryAccount(in *pb.QueryBlockReq) (string, error) {
+func (e *EthHanlder) QueryAccount(in *pb.QueryBlockReq) (string, error) {
 	addrHash := common2.HexToAddress(in.GetEthAcc())
 	bal, err := e.client.BalanceAt(context.Background(), addrHash, nil)
 	if err != nil {
@@ -242,5 +242,3 @@ func (e *EthHanlder) buildTx(from, to, amount string) *types.Transaction {
 	tx := types.NewTransaction(nonce, toAddress, txAmount, 210000, gasPrice, data)
 	return tx
 }
-
-
