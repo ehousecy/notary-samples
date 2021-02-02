@@ -71,7 +71,7 @@ MSP_HOME=$HOME/.notary-samples/organizations/peerOrganizations/org1.example.com/
 ./notary-cli approve --ticket-id 1
 
 #查询跨链交易信息
-./notary-cli query 
+./notary-cli query --ticket-id 1
 ```
 
 ## 查询跨链后资产信息

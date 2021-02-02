@@ -16,7 +16,7 @@ import (
 
 const (
 	NotaryAddress = "0x71BE5a9044F3E41c74b7c25AA19B528dd6B9f387"
-	priv = "478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb"
+	priv          = "478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb"
 )
 
 var (
@@ -88,7 +88,8 @@ func (e *EthHanlder) SignAndSendTx(ticketId string, txData *types.Transaction) e
 		EthLogPrintf("Send transaction error: %v", err)
 		return err
 	}
-	return provider.BoundTransferToTx(ticketId, signed.Hash().String())
+	crossTxInfo, _ := provider.QueryCrossTxInfoByCID(ticketId)
+	return provider.BoundTransferToTx(crossTxInfo.EthTx.FromTxID, signed.Hash().String())
 }
 
 // construct and sign transactions for user
