@@ -28,7 +28,7 @@ func (cts CrossTxDataServiceProvider) CreateCrossTx(ctxBase CrossTxBase) (string
 func (cts CrossTxDataServiceProvider) ValidateEnableCreateTransferFromTx(cidStr string, txType string) error {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return errors.New("invalid cross-chain transaction id")
+		return fmt.Errorf("invalid cross-chain transaction id:%s", cidStr)
 	}
 	//1.判断ctxID是否存在
 	ctd, err := model.GetCrossTxDetailByID(cid)
@@ -58,7 +58,7 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 	}
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return errors.New("invalid cross-chain transaction id")
+		return fmt.Errorf("invalid cross-chain transaction id:%s", cidStr)
 	}
 	//1.获取跨链交易
 	ctd, err := model.GetCrossTxDetailByID(cid)
@@ -135,7 +135,7 @@ func (cts CrossTxDataServiceProvider) BoundTransferToTx(boundTxID, txID string) 
 func (cts CrossTxDataServiceProvider) QueryCrossTxInfoByCID(cidStr string) (*CrossTxInfo, error) {
 	cid, err := stringToInt64(cidStr)
 	if err != nil {
-		return nil, errors.New("invalid cross-chain transaction id")
+		return nil, fmt.Errorf("invalid cross-chain transaction id:%s", cidStr)
 	}
 	ctd, err := model.GetCrossTxDetailByID(cid)
 	if err != nil {
@@ -384,14 +384,14 @@ func validateEnableCompleteTransferFromTx(ctd *model.CrossTxDetail, td *model.Tx
 
 func validateEnableBoundTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail) error {
 	if td.TxStatus != constant.TxStatusFromFinished || ctd.Status != constant.StatusHosted {
-		return errors.New("当前交易不能代理转账")
+		return fmt.Errorf("当前[%s]交易不能代理转账, ticketid:%v, txid:%s", td.Type, td.CrossTxID, td.FromTxID)
 	}
 	return nil
 }
 
 func validateEnableCompleteTransferToTx(ctd *model.CrossTxDetail, td *model.TxDetail) error {
 	if td.TxStatus != constant.TxStatusToCreated || ctd.Status != constant.StatusHosted {
-		return errors.New("当前交易不能代理转账")
+		return fmt.Errorf("当前[%s]交易不能完成, ticketid:%v, txid:%s", td.Type, td.CrossTxID, td.ToTxID)
 	}
 	return nil
 }
@@ -399,7 +399,7 @@ func validateEnableCompleteTransferToTx(ctd *model.CrossTxDetail, td *model.TxDe
 func completeTransferFromTx(td *model.TxDetail, ctd *model.CrossTxDetail, txID string) error {
 	//2.校验需要完成的交易状态
 	if td.TxStatus != constant.TxStatusFromCreated {
-		return errors.New("当前交易不能完成")
+		return fmt.Errorf("当前[%s]交易不能完成, ticketid:%v, txid:%s", td.Type, td.CrossTxID, td.FromTxID)
 	}
 	if err := ctd.ValidateHostingStatus(); err != nil {
 		return err
