@@ -15,14 +15,14 @@ var queryAccountCmd = &cobra.Command{
 }
 
 const (
-	queryAccountKey = "queryAccountKey"
-	queryChannelKey = "queryChannelKey"
+	queryAccountKey   = "queryAccountKey"
+	queryChannelKey   = "queryChannelKey"
 	queryChaincodeKey = "queryChaincodeKey"
-	queryNetworkKey = "queryNetworkKey"
+	queryNetworkKey   = "queryNetworkKey"
 )
 
-func init()  {
-	err := addStringOption(queryAccountCmd,queryAccountKey, accountOption, "", "", accountDescription, required)
+func init() {
+	err := addStringOption(queryAccountCmd, queryAccountKey, accountOption, "", "", accountDescription, required)
 	exitErr(err)
 
 	err = addStringOption(queryAccountCmd, queryChannelKey, fchannelOption, "", "", channelDescription, optional)
@@ -35,7 +35,7 @@ func init()  {
 	exitErr(err)
 }
 
-func execQueryAccountCmd(cmd *cobra.Command, args []string)  {
+func execQueryAccountCmd(cmd *cobra.Command, args []string) {
 	client := grpc.NewClient()
 	account := viper.GetString(queryAccountKey)
 	netType := viper.GetString(queryNetworkKey)
@@ -43,14 +43,14 @@ func execQueryAccountCmd(cmd *cobra.Command, args []string)  {
 	switch netType {
 	case ETHType:
 		req.Network = pb.NetworkType_eth
-		req.Account =  &pb.QueryBlockReq_EthAcc{EthAcc: account}
+		req.Account = &pb.QueryBlockReq_EthAcc{EthAcc: account}
 	case FabricType:
 		channelName := viper.GetString(queryChannelKey)
 		chaincodeName := viper.GetString(queryChaincodeKey)
 		fabricAccount := &pb.FabricAccout{
-			AccountInfo: account,
+			AccountInfo:   account,
 			ChaincodeName: chaincodeName,
-			ChannelName: channelName,
+			ChannelName:   channelName,
 		}
 		req.Network = pb.NetworkType_fabric
 		req.Account = &pb.QueryBlockReq_FabricAcc{FabricAcc: fabricAccount}

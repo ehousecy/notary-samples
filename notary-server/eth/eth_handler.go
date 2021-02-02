@@ -16,6 +16,7 @@ import (
 
 const (
 	NotaryAddress = "0x71BE5a9044F3E41c74b7c25AA19B528dd6B9f387"
+	priv = "478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb"
 )
 
 var (
@@ -81,9 +82,13 @@ func (e *EthHanlder) BuildTx(args ...string) *types.Transaction {
 
 // sign transaction and send out to the network, record transaction id locally
 func (e *EthHanlder) SignAndSendTx(ticketId string, txData *types.Transaction) error {
-	priv := "478976d8cfae83fdc3152c85f5c49c7c324298bc4431ee64b3caebda15fdfbfb"
 	signed := e.signTx(priv, txData)
-	return e.sendTx(ticketId, signed)
+	err := e.sendTx(ticketId, signed)
+	if err != nil {
+		EthLogPrintf("Send transaction error: %v", err)
+		return err
+	}
+	return provider.BoundTransferToTx(ticketId, signed.Hash().String())
 }
 
 // construct and sign transactions for user
@@ -126,7 +131,12 @@ func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, rec
 		EthLogPrintf("Sign tx failed, %v", err)
 		return err
 	}
-	return e.sendTx(ticketId, tx)
+	err = e.sendTx(ticketId, tx)
+	if err != nil {
+		EthLogPrintf("Send transaction error: %v", err)
+		return err
+	}
+	return provider.CreateTransferFromTx(ticketId, tx.Hash().String(), constant.TypeEthereum)
 }
 
 // approve a cross transaction
@@ -201,7 +211,6 @@ func (e *EthHanlder) sendTx(ticketId string, signed *types.Transaction) error {
 		return err
 	}
 	txHash := signed.Hash().String()
-	provider.CreateTransferFromTx(ticketId, txHash, constant.TypeEthereum)
 	return e.monitor.AddTxRecord(txHash)
 }
 
