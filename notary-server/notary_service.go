@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
@@ -12,6 +11,7 @@ import (
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/pkg/errors"
 	"log"
 )
 
@@ -31,7 +31,7 @@ type TxExecResult struct {
 type TxHandler interface {
 	Approve(ticketID string) error // notary admin op interface
 	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
-	QueryAccount(req *pb.QueryBlockReq)(string, error)
+	QueryAccount(req *pb.QueryBlockReq) (string, error)
 }
 
 func NewNotaryService() *NotaryService {
@@ -123,7 +123,7 @@ func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*
 	}, nil
 }
 
-func (n *NotaryService)QueryBlock(ctx context.Context, in *pb.QueryBlockReq) (*pb.QueryBlockResp, error)  {
+func (n *NotaryService) QueryBlock(ctx context.Context, in *pb.QueryBlockReq) (*pb.QueryBlockResp, error) {
 	handler := n.GetHandler(in.Network)
 	if handler == nil {
 		NotaryLogPrintf("Unknown network type: %d", in.Network)
@@ -170,13 +170,18 @@ func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (
 }
 
 func (n *NotaryService) approveCtx(ticketId string) error {
+	var errAll error = nil
 	for _, handler := range n.handlers {
 		err := handler.Approve(ticketId)
 		if err != nil {
-			return err
+			if errAll == nil {
+				errAll = err
+			} else {
+				errAll = errors.Wrap(errAll, err.Error())
+			}
 		}
 	}
-	return nil
+	return errAll
 }
 
 func covertCreateCrossTxReq(req *pb.CreateCrossTxReq) (services.CrossTxBase, error) {
