@@ -1653,7 +1653,7 @@ var file_proto_notary_service_proto_rawDesc = []byte{
 	0x6b, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x22, 0x00, 0x12, 0x26, 0x0a, 0x08, 0x54, 0x65, 0x73,
 	0x74, 0x44, 0x69, 0x61, 0x6c, 0x12, 0x0b, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x50, 0x69,
 	0x6e, 0x67, 0x1a, 0x0b, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x50, 0x6f, 0x6e, 0x67, 0x22,
-	0x00, 0x12, 0x3b, 0x0a, 0x0a, 0x51, 0x65, 0x75, 0x72, 0x79, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12,
+	0x00, 0x12, 0x3b, 0x0a, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12,
 	0x14, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x42, 0x6c, 0x6f,
 	0x63, 0x6b, 0x52, 0x65, 0x71, 0x1a, 0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x71, 0x75,
 	0x65, 0x72, 0x79, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x22, 0x00, 0x42, 0x2a,
@@ -1733,14 +1733,14 @@ var file_proto_notary_service_proto_depIdxs = []int32{
 	19, // 24: proto.NotaryService.GetTicket:input_type -> proto.QueryTxRequest
 	21, // 25: proto.NotaryService.OpTicket:input_type -> proto.AdminOpTicketReq
 	4,  // 26: proto.NotaryService.TestDial:input_type -> proto.Ping
-	23, // 27: proto.NotaryService.QeuryBlock:input_type -> proto.queryBlockReq
+	23, // 27: proto.NotaryService.QueryBlock:input_type -> proto.queryBlockReq
 	10, // 28: proto.NotaryService.CreateCTX:output_type -> proto.CreateCrossTxResp
 	12, // 29: proto.NotaryService.SubmitTx:output_type -> proto.TransferPropertyResponse
 	18, // 30: proto.NotaryService.ListTickets:output_type -> proto.ListTxResponse
 	20, // 31: proto.NotaryService.GetTicket:output_type -> proto.QueryTxResponse
 	22, // 32: proto.NotaryService.OpTicket:output_type -> proto.AdminOpTicketResp
 	5,  // 33: proto.NotaryService.TestDial:output_type -> proto.Pong
-	24, // 34: proto.NotaryService.QeuryBlock:output_type -> proto.queryBlockResp
+	24, // 34: proto.NotaryService.QueryBlock:output_type -> proto.queryBlockResp
 	28, // [28:35] is the sub-list for method output_type
 	21, // [21:28] is the sub-list for method input_type
 	21, // [21:21] is the sub-list for extension type_name
@@ -2050,7 +2050,7 @@ type NotaryServiceClient interface {
 	GetTicket(ctx context.Context, in *QueryTxRequest, opts ...grpc.CallOption) (*QueryTxResponse, error)
 	OpTicket(ctx context.Context, in *AdminOpTicketReq, opts ...grpc.CallOption) (*AdminOpTicketResp, error)
 	TestDial(ctx context.Context, in *Ping, opts ...grpc.CallOption) (*Pong, error)
-	QeuryBlock(ctx context.Context, in *QueryBlockReq, opts ...grpc.CallOption) (*QueryBlockResp, error)
+	QueryBlock(ctx context.Context, in *QueryBlockReq, opts ...grpc.CallOption) (*QueryBlockResp, error)
 }
 
 type notaryServiceClient struct {
@@ -2137,9 +2137,9 @@ func (c *notaryServiceClient) TestDial(ctx context.Context, in *Ping, opts ...gr
 	return out, nil
 }
 
-func (c *notaryServiceClient) QeuryBlock(ctx context.Context, in *QueryBlockReq, opts ...grpc.CallOption) (*QueryBlockResp, error) {
+func (c *notaryServiceClient) QueryBlock(ctx context.Context, in *QueryBlockReq, opts ...grpc.CallOption) (*QueryBlockResp, error) {
 	out := new(QueryBlockResp)
-	err := c.cc.Invoke(ctx, "/proto.NotaryService/QeuryBlock", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.NotaryService/QueryBlock", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2154,7 +2154,7 @@ type NotaryServiceServer interface {
 	GetTicket(context.Context, *QueryTxRequest) (*QueryTxResponse, error)
 	OpTicket(context.Context, *AdminOpTicketReq) (*AdminOpTicketResp, error)
 	TestDial(context.Context, *Ping) (*Pong, error)
-	QeuryBlock(context.Context, *QueryBlockReq) (*QueryBlockResp, error)
+	QueryBlock(context.Context, *QueryBlockReq) (*QueryBlockResp, error)
 }
 
 // UnimplementedNotaryServiceServer can be embedded to have forward compatible implementations.
@@ -2179,8 +2179,8 @@ func (*UnimplementedNotaryServiceServer) OpTicket(context.Context, *AdminOpTicke
 func (*UnimplementedNotaryServiceServer) TestDial(context.Context, *Ping) (*Pong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestDial not implemented")
 }
-func (*UnimplementedNotaryServiceServer) QeuryBlock(context.Context, *QueryBlockReq) (*QueryBlockResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QeuryBlock not implemented")
+func (*UnimplementedNotaryServiceServer) QueryBlock(context.Context, *QueryBlockReq) (*QueryBlockResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryBlock not implemented")
 }
 
 func RegisterNotaryServiceServer(s *grpc.Server, srv NotaryServiceServer) {
@@ -2303,20 +2303,20 @@ func _NotaryService_TestDial_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NotaryService_QeuryBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _NotaryService_QueryBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryBlockReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NotaryServiceServer).QeuryBlock(ctx, in)
+		return srv.(NotaryServiceServer).QueryBlock(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.NotaryService/QeuryBlock",
+		FullMethod: "/proto.NotaryService/QueryBlock",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NotaryServiceServer).QeuryBlock(ctx, req.(*QueryBlockReq))
+		return srv.(NotaryServiceServer).QueryBlock(ctx, req.(*QueryBlockReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2346,8 +2346,8 @@ var _NotaryService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _NotaryService_TestDial_Handler,
 		},
 		{
-			MethodName: "QeuryBlock",
-			Handler:    _NotaryService_QeuryBlock_Handler,
+			MethodName: "QueryBlock",
+			Handler:    _NotaryService_QueryBlock_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

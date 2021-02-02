@@ -14,7 +14,7 @@ service NotaryService {
   rpc GetTicket(QueryTxRequest) returns (QueryTxResponse){}
   rpc OpTicket(AdminOpTicketReq) returns (AdminOpTicketResp) {}
   rpc TestDial(Ping) returns (Pong){} // grpc test purpose
-  rpc QeuryBlock(queryBlockReq) returns(queryBlockResp){}
+  rpc QueryBlock(queryBlockReq) returns(queryBlockResp){}
 }
 
 // empty message, used to fill in the rpc arguments or return types
