@@ -30,6 +30,7 @@ const (
 	signCertOption    = "sign-cert"
 	mspIDOption       = "msp-id"
 	mspPathOption     = "msp-path"
+	accountOption = "account"
 )
 
 // option description or command description
@@ -45,6 +46,7 @@ const (
 	signCertDescription   = "Sign cert provide truly public key verification signature, fabric is necessary"
 	mspIDDescription      = "fabric MSP ID"
 	mspPathDescription    = "fabric MSP path, if specifying this parameter will overwrite private-key and sign-cert"
+	accountDescription = "ethereum account address or fabric account name"
 )
 const (
 	required = true

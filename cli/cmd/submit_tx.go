@@ -136,7 +136,7 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 	err = srv.Send(&pb.TransferPropertyRequest{
 		Data:        creator,
 		CTxId:       ticketID,
-		NetworkType: pb.TransferPropertyRequest_fabric,
+		NetworkType: pb.NetworkType_fabric,
 	})
 	exitErr(err)
 	var i = 1
@@ -181,7 +181,7 @@ func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_Subm
 	}
 	err = stream.Send(&pb.TransferPropertyRequest{
 		CTxId:       ticketId,
-		NetworkType: pb.TransferPropertyRequest_eth,
+		NetworkType: pb.NetworkType_eth,
 	})
 	if err != nil {
 		return err
