@@ -178,9 +178,18 @@ message AdminOpTicketResp{
 }
 
 
+message fabricAccout {
+  string channelName = 1;
+  string chaincodeName = 2;
+  string accountInfo = 3;
+}
+
 message queryBlockReq{
   NetworkType network = 1;
-  string accountId = 2;
+  oneof account{
+    string ethAcc = 2;
+    fabricAccout fabricAcc = 3;
+  }
 }
 
 message queryBlockResp{

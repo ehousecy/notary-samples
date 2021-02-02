@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/ehousecy/notary-samples/notary-server/db/constant"
 	"github.com/ehousecy/notary-samples/notary-server/db/services"
@@ -19,7 +20,7 @@ var validate *validator.Validate
 type NotaryService struct {
 	provider services.CrossTxDataService
 	fh       fabric.Handler
-	handlers map[pb.TransferPropertyRequest_NetworkType]TxHandler
+	handlers map[pb.NetworkType]TxHandler
 }
 
 type TxExecResult struct {
@@ -30,6 +31,7 @@ type TxExecResult struct {
 type TxHandler interface {
 	Approve(ticketID string) error // notary admin op interface
 	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
+	QueryAccount(req *pb.QueryBlockReq)(string, error)
 }
 
 func NewNotaryService() *NotaryService {
@@ -37,14 +39,14 @@ func NewNotaryService() *NotaryService {
 	n := &NotaryService{
 		provider: services.NewCrossTxDataServiceProvider(),
 		fh:       tx.NewFabricHandler(),
-		handlers: make(map[pb.TransferPropertyRequest_NetworkType]TxHandler, 8),
+		handlers: make(map[pb.NetworkType]TxHandler, 8),
 	}
-	n.AddHandler(pb.TransferPropertyRequest_eth, eth.NewEthHandler("http://localhost:8545"))
-	n.AddHandler(pb.TransferPropertyRequest_fabric, n.fh)
+	n.AddHandler(pb.NetworkType_eth, eth.NewEthHandler("http://localhost:8545"))
+	n.AddHandler(pb.NetworkType_fabric, n.fh)
 	return n
 }
 
-func (n *NotaryService) AddHandler(t pb.TransferPropertyRequest_NetworkType, handler TxHandler) *NotaryService {
+func (n *NotaryService) AddHandler(t pb.NetworkType, handler TxHandler) *NotaryService {
 	_, exist := n.handlers[t]
 	if exist {
 		log.Printf("[Warning] handler already exist, updating handler %v\n", t.String())
@@ -53,7 +55,7 @@ func (n *NotaryService) AddHandler(t pb.TransferPropertyRequest_NetworkType, han
 	return n
 }
 
-func (n *NotaryService) GetHandler(code pb.TransferPropertyRequest_NetworkType) TxHandler {
+func (n *NotaryService) GetHandler(code pb.NetworkType) TxHandler {
 	handler, ok := n.handlers[code]
 	if !ok {
 		log.Printf("[Waring] Unkonw transaction type %v\n", code)
@@ -119,6 +121,20 @@ func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*
 		Detail:        convertToCrossTx(*crossTxInfo),
 		BlockchainTxs: convertToTxIdsInBlock(*crossTxInfo),
 	}, nil
+}
+
+func (n *NotaryService)QueryBlock(ctx context.Context, in *pb.QueryBlockReq) (*pb.QueryBlockResp, error)  {
+	handler := n.GetHandler(in.Network)
+	if handler == nil {
+		NotaryLogPrintf("Unknown network type: %d", in.Network)
+		return nil, errors.New("Unknown network type! ")
+	}
+	resp, err := handler.QueryAccount(in)
+	if err != nil {
+		NotaryLogPrintf("Query Account Info error: %v", err)
+		return nil, err
+	}
+	return &pb.QueryBlockResp{Info: resp}, nil
 }
 
 func (n *NotaryService) OpTicket(ctx context.Context, in *pb.AdminOpTicketReq) (*pb.AdminOpTicketResp, error) {

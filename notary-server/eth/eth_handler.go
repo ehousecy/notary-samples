@@ -153,6 +153,17 @@ func (e *EthHanlder) ConfirmTx(txHash string) error {
 	return err
 }
 
+// query account info
+
+func (e *EthHanlder)QueryAccount(in *pb.QueryBlockReq) (string, error) {
+	addrHash := common2.HexToAddress(in.GetEthAcc())
+	bal, err := e.client.BalanceAt(context.Background(), addrHash, nil)
+	if err != nil {
+		return "", err
+	}
+	return bal.String(), nil
+}
+
 // helper functions
 
 // sign transactions using private key
