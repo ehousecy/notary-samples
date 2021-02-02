@@ -31,7 +31,7 @@ type TxExecResult struct {
 type TxHandler interface {
 	Approve(ticketID string) error // notary admin op interface
 	ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error
-	QueryAccount(req *pb.QueryBlockReq)(string, error)
+	QueryAccount(req *pb.QueryBlockReq) (string, error)
 }
 
 func NewNotaryService() *NotaryService {
@@ -123,7 +123,7 @@ func (n *NotaryService) GetTicket(ctx context.Context, in *pb.QueryTxRequest) (*
 	}, nil
 }
 
-func (n *NotaryService)QueryBlock(ctx context.Context, in *pb.QueryBlockReq) (*pb.QueryBlockResp, error)  {
+func (n *NotaryService) QueryBlock(ctx context.Context, in *pb.QueryBlockReq) (*pb.QueryBlockResp, error) {
 	handler := n.GetHandler(in.Network)
 	if handler == nil {
 		NotaryLogPrintf("Unknown network type: %d", in.Network)

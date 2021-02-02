@@ -208,7 +208,7 @@ func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_Subm
 	if err != nil {
 		return err
 	}
-	_, err =stream.Recv()
+	_, err = stream.Recv()
 	if err == io.EOF {
 		return nil
 	}

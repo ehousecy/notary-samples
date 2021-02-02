@@ -14,21 +14,21 @@ var genAccountCmd = &cobra.Command{
 	Run: execGenAccountCmd,
 }
 
-func execGenAccountCmd(cmd *cobra.Command, args []string)  {
+func execGenAccountCmd(cmd *cobra.Command, args []string) {
 	priv := genPrivateKey()
 	address := crypto.PubkeyToAddress(priv.PublicKey).Hex()
 	privString := fmt.Sprintf("%x", priv.D)
 	fmt.Println("Generated Account:")
 	fmt.Println("Address: ", address)
-	fmt.Println("Private Key: ",privString)
+	fmt.Println("Private Key: ", privString)
 }
 
 func genPrivateKey() *ecdsa.PrivateKey {
 	priv := make([]byte, 32)
 	s := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(s)
-	for i := 0; i < 31; i ++ {
+	for i := 0; i < 31; i++ {
 		priv[i] = byte(r.Intn(256))
 	}
-	return  crypto.ToECDSAUnsafe(priv)
+	return crypto.ToECDSAUnsafe(priv)
 }

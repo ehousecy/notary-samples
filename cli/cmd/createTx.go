@@ -58,7 +58,7 @@ func execCreateCmd(cmd *cobra.Command, args []string) {
 		log.Fatalf("Invalid Ethereum Amount received: %s", eAmount)
 	}
 	fAmount := viper.GetString(crXfAmountKey)
-	
+
 	efrom := viper.GetString(crXeFromKey)
 	eto := viper.GetString(crXeToKey)
 	ffrom := viper.GetString(crXfFromKey)
