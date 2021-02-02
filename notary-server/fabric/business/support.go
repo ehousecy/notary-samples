@@ -86,6 +86,14 @@ func (s Support) ValidateEnableSupport(channelID, chaincodeName, assetType, asse
 	return business.ValidateEnableSupport(chaincodeName, assetType, asset)
 }
 
+func (s Support) CreateQueryAssertRequest(channelID string, rp RequestParams) (*channel.Request, error) {
+	business, err := s.getBusiness(channelID)
+	if err != nil {
+		return nil, err
+	}
+	return business.CreateQueryAssertRequest(rp.ChaincodeName, rp.AssetType, rp.Asset)
+}
+
 func (s Support) getBusiness(channelID string) (Business, error) {
 	b, ok := s.businessMap[channelID]
 	if !ok {

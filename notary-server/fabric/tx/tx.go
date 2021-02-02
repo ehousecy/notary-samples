@@ -11,6 +11,8 @@ import (
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 	"log"
@@ -279,4 +281,21 @@ func (th *txHandler) QueryConfirmingTx() error {
 		putTxID(cti.ChannelID, cti.TxID, txInfo{isOfflineTx: cti.IsOfflineTx, ticketId: cti.ID})
 	}
 	return nil
+}
+
+func (th *txHandler) QueryAccount(req *pb.QueryBlockReq) (string, error) {
+	query := req.GetFabricAcc()
+	request, err := th.bs.CreateQueryAssertRequest(query.ChannelName, business.RequestParams{ChaincodeName: query.ChaincodeName, Asset: query.AccountInfo})
+	if err != nil {
+		return "", err
+	}
+	c, err := client.GetClientByChannelID(query.ChannelName)
+	if err != nil {
+		return "", err
+	}
+	response, err := c.CC.Query(*request, channel.WithRetry(retry.DefaultChannelOpts))
+	if err != nil {
+		return "", err
+	}
+	return string(response.Payload), nil
 }

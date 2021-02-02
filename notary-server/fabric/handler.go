@@ -12,4 +12,5 @@ type Handler interface {
 	ValidateEnableSupport(channelID, chaincodeName, assetType, asset string) error
 	QueryLastFabricBlockNumber(channelID string) (uint64, error)
 	QueryConfirmingTx() error
+	QueryAccount(req *pb.QueryBlockReq) (string, error)
 }

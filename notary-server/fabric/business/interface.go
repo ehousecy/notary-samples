@@ -12,4 +12,5 @@ type Business interface {
 	CreateToRequest(chaincodeName, assetType, asset, to string) (*channel.Request, error)
 	GetChannelID() string
 	ValidateEnableSupport(chaincodeName, assetType, asset string) (bool, error)
+	CreateQueryAssertRequest(chaincodeName, assetType, asset string) (*channel.Request, error)
 }

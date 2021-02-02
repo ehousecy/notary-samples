@@ -55,3 +55,7 @@ func (b BasicBusiness) ValidateEnableSupport(chaincodeName, assetType, asset str
 func (b BasicBusiness) GetChannelID() string {
 	return "mychannel"
 }
+
+func (b BasicBusiness)  CreateQueryAssertRequest(chaincodeName, assetType, asset string) (*channel.Request, error) {
+	return &channel.Request{ChaincodeID: chaincodeName, Fcn: "ReadAsset", Args: [][]byte{[]byte(asset)}}, nil
+}
