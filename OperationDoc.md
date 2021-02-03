@@ -11,7 +11,7 @@ git clone https://github.com/ehousecy/notary-samples.git
 cd notary-samples
 #安装以太坊和fabric网络文件
 make install
-#启动以太坊和fabric网络
+#启动以太坊和fabric网络，启动前确保安装expect，命令：apt-get install expect
 make start
 ```
 
@@ -36,7 +36,7 @@ cd build
 #Private Key:  324d34b4c06c52cf995cf759878f6c93615eedea30d491260c7651426586f900
 
 #转账账户申请以太
-./scripts/apply_eth.sh 0xB696AaF5ea7455a65Be5a765c9b9F2e351B60a09 1000
+../scripts/apply_eth.sh 0xB696AaF5ea7455a65Be5a765c9b9F2e351B60a09 1000
 
 #打开一个terminal,进入build目录,执行命令启动跨链服务
 ./notary-server
