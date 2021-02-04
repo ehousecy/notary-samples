@@ -32,7 +32,18 @@ cd ../..
 
 #cp msp to server fabric business
 if [ ! -d "$HOME"/.notary-samples ]; then
+    if [ -f "$HOME"/.notary-samples ]; then
+        rm -f "$HOME"/.notary-samples
+        res=$?
+        if [ $res -ne 0 ]; then
+            fatalln "Failed to rm $HOME/.notary-samples file..."
+        fi
+    fi
     mkdir "$HOME"/.notary-samples
+    res=$?
+        if [ $res -ne 0 ]; then
+            fatalln "Failed to exec mkdir $HOME/.notary-samples dir..."
+        fi
 fi
 cp -r fabric-samples/test-network/organizations "$HOME"/.notary-samples/
 res=$?
