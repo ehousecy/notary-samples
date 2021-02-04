@@ -27,17 +27,12 @@ var clientMap = make(map[string]*Client, 8)
 var lock sync.Mutex
 
 type Client struct {
-	// Fabric network information
-	ConfigPath string
-	OrgName    string
-	OrgUser    string
-
 	// sdk clients
 	SDK            *fabsdk.FabricSDK
 	rc             *resmgmt.Client
-	CC             *channel.Client
+	cc             *channel.Client
 	lc             *ledger.Client
-	ContextClient  contextApi.Client
+	contextClient  contextApi.Client
 	eventClientMap *event.Client
 
 	//channel info
@@ -49,8 +44,6 @@ type Client struct {
 	Selection       fab.SelectionService
 	Membership      fab.ChannelMembership
 	Event           fab.EventService
-
-	// Same for each peer
 }
 
 func GetClientByChannelID(channelID string) (*Client, error) {
@@ -79,7 +72,7 @@ func New(channelID string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	if client.ContextClient, err = sdkutil.GetClient(sdk, contextOptions...); err != nil {
+	if client.contextClient, err = sdkutil.GetClient(sdk, contextOptions...); err != nil {
 		return nil, err
 	}
 
@@ -105,7 +98,7 @@ func New(channelID string) (*Client, error) {
 	if client.Event, err = client.ChannelService.EventService(); err != nil {
 		return nil, err
 	}
-	client.CC, err = channel.New(client.ChannelProvider)
+	client.cc, err = channel.New(client.ChannelProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +124,7 @@ func (c *Client) CreateTransactionProposal(chrequest *channel.Request, creator [
 		TransientMap: chrequest.TransientMap,
 		IsInit:       chrequest.IsInit,
 	}
-	reqCtx, cancel := context.NewRequest(c.ContextClient, context.WithTimeout(10*time.Minute))
+	reqCtx, cancel := context.NewRequest(c.contextClient, context.WithTimeout(10*time.Minute))
 	defer cancel()
 	transactor, err := channelImpl.NewTransactor(reqCtx, c.ChannelCfg)
 	if err != nil {
@@ -146,7 +139,7 @@ func (c *Client) CreateTransactionProposal(chrequest *channel.Request, creator [
 }
 
 func (c *Client) CreateTransactionPayload(request channel.Request, signedProposal *pb.SignedProposal) ([]byte, error) {
-	reqCtx, cancel := context.NewRequest(c.ContextClient, context.WithTimeout(10*time.Minute))
+	reqCtx, cancel := context.NewRequest(c.contextClient, context.WithTimeout(10*time.Minute))
 	defer cancel()
 	transactor, err := channelImpl.NewTransactor(reqCtx, c.ChannelCfg)
 	if err != nil {
@@ -199,9 +192,9 @@ func (c *Client) CreateTransactionPayload(request channel.Request, signedProposa
 }
 
 func (c *Client) SendSignedEnvelopTx(envelope *fab.SignedEnvelope) (*fab.TransactionResponse, error) {
-	reqCtx, cancel := context.NewRequest(c.ContextClient, context.WithTimeout(10*time.Minute))
+	reqCtx, cancel := context.NewRequest(c.contextClient, context.WithTimeout(10*time.Minute))
 	defer cancel()
-	orders, _ := sdkutil.GetOrders(c.ContextClient, c.ChannelCfg)
+	orders, _ := sdkutil.GetOrders(c.contextClient, c.ChannelCfg)
 	f, err := sdkutil.BroadcastEnvelope(reqCtx, envelope, orders)
 	return f, err
 }
@@ -210,15 +203,19 @@ func (c *Client) CreateTransaction(request channel.Request) (string, *fab.Signed
 	var options []channel.RequestOption
 	options = append(options, channel.WithTimeout(fab.Execute, time.Minute*10))
 	options = append(options, channel.WithRetry(retry.DefaultChannelOpts))
-	response, err := c.CC.InvokeHandler(newExecuteHandler(), request, options...)
+	response, err := c.cc.InvokeHandler(newExecuteHandler(), request, options...)
 	if err != nil {
 		return "", nil, err
 	}
 
 	tx, err := sdkutil.CreateTransaction(response.Proposal, response.Responses)
 	payload, err := sdkutil.CreatePayload(tx)
-	envelope, _ := sdkutil.SignPayload(c.ContextClient, payload)
+	envelope, _ := sdkutil.SignPayload(c.contextClient, payload)
 	return string(response.Proposal.TxnID), envelope, nil
+}
+
+func (c *Client) ExecQueryRequest(request channel.Request) (channel.Response, error) {
+	return c.cc.Query(request, channel.WithRetry(retry.DefaultChannelOpts))
 }
 
 func newExecuteHandler(next ...invoke.Handler) invoke.Handler {
