@@ -94,7 +94,7 @@ func (e *EthHanlder) SignAndSendTx(ticketId string, txData *types.Transaction) e
 
 // construct and sign transactions for user
 func (e *EthHanlder) ConstructAndSignTx(src pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
-	ticketId := recv.CTxId
+	ticketId := recv.TicketId
 	err := provider.ValidateEnableCreateTransferFromTx(ticketId, constant.TypeEthereum)
 	if err != nil {
 		return err

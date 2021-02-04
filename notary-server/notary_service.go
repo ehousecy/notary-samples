@@ -76,7 +76,7 @@ func (n *NotaryService) CreateCTX(ctx context.Context, in *pb.CreateCrossTxReq) 
 
 	cid, err := n.provider.CreateCrossTx(crossTxBase)
 	return &pb.CreateCrossTxResp{
-		CTxId: cid,
+		TicketId: cid,
 	}, nil
 }
 
@@ -211,7 +211,7 @@ func convertToCrossTx(cti services.CrossTxInfo) *pb.CrossTx {
 		status = &pb.CrossTxStatus{Status: &pb.CrossTxStatus_TStatus{TStatus: pb.TicketStatus_created}}
 	}
 	return &pb.CrossTx{
-		CTxId: cti.ID,
+		TicketId: cti.ID,
 		Detail: &pb.CrossTxDetail{
 			EFrom:          cti.EthFrom,
 			ETo:            cti.EthTo,

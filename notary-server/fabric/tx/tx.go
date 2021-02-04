@@ -51,9 +51,9 @@ func NewFabricHandler() *txHandler {
 }
 
 func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, recv *pb.TransferPropertyRequest) error {
-	log.Printf("开始 fabric 交易, ticketID:%s", recv.CTxId)
+	log.Printf("开始 fabric 交易, ticketID:%s", recv.TicketId)
 	//通过ticketId查询跨链交易信息
-	crossTxInfo, err := th.db.QueryCrossTxInfoByCID(recv.CTxId)
+	crossTxInfo, err := th.db.QueryCrossTxInfoByCID(recv.TicketId)
 	if err != nil {
 		return err
 	}

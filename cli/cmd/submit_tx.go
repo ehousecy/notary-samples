@@ -135,7 +135,7 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 	exitErr(err)
 	err = srv.Send(&pb.TransferPropertyRequest{
 		Data:        creator,
-		CTxId:       ticketID,
+		TicketId:       ticketID,
 		NetworkType: pb.NetworkType_fabric,
 	})
 	exitErr(err)
@@ -180,7 +180,7 @@ func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_Subm
 		return errors.New("Invalid private key ")
 	}
 	err = stream.Send(&pb.TransferPropertyRequest{
-		CTxId:       ticketId,
+		TicketId:       ticketId,
 		NetworkType: pb.NetworkType_eth,
 	})
 	if err != nil {
