@@ -58,7 +58,7 @@ message CreateCrossTxReq {
 // if error happens, fill error code and error message.
 message CreateCrossTxResp {
   Error error = 1;
-  string cTxId =  2; //cross transaction id
+  string ticketId =  2; //cross transaction id
   string vEthAddress =  3;
   string vFabAddress = 4;
   google.protobuf.Timestamp createTime = 5;
@@ -74,7 +74,7 @@ enum NetworkType{
 
 message TransferPropertyRequest{
   bytes data = 1; // signed ether transaction data
-  string cTxId = 2; // cross transaction id
+  string ticketId = 2; // cross transaction id
   NetworkType networkType = 3;
 }
 
@@ -125,7 +125,7 @@ message CrossTxStatus{
 
 // cross transaction ticket info
 message CrossTx {
-  string cTxId = 1;
+  string ticketId = 1;
   CrossTxDetail detail = 2;
   CrossTxStatus status = 3;
   google.protobuf.Timestamp createTime = 4;
