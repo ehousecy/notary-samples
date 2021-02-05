@@ -11,8 +11,6 @@ import (
 	pb "github.com/ehousecy/notary-samples/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 	"log"
@@ -293,7 +291,7 @@ func (th *txHandler) QueryAccount(req *pb.QueryBlockReq) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	response, err := c.CC.Query(*request, channel.WithRetry(retry.DefaultChannelOpts))
+	response, err := c.ExecQueryRequest(*request)
 	if err != nil {
 		return "", err
 	}
