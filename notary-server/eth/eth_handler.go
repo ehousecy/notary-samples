@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"log"
+	"math"
 	"math/big"
 )
 
@@ -21,6 +22,7 @@ const (
 
 var (
 	provider = services.NewCrossTxDataServiceProvider()
+	etherBase = big.NewInt(1000000000000000000)
 )
 
 type EthHanlder struct {
@@ -172,7 +174,7 @@ func (e *EthHanlder) QueryAccount(in *pb.QueryBlockReq) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return bal.String(), nil
+	return toEther(bal), nil
 }
 
 // helper functions
@@ -242,13 +244,22 @@ func (e *EthHanlder) buildTx(from, to, amount string) *types.Transaction {
 
 	toAddress := common2.HexToAddress(to)
 
-	txAmount, ok := new(big.Int).SetString(amount, 10)
+	txAmount, ok := new(big.Float).SetString(amount)
+	txAmount.Mul(txAmount, big.NewFloat(math.Pow10(18)))
+	bigAmount, ok :=new(big.Int).SetString(txAmount.String(), 10)
 	if !ok {
 		log.Printf("Transaction amount not correct\n")
 		return nil
 	}
 
 	var data []byte
-	tx := types.NewTransaction(nonce, toAddress, txAmount, 210000, gasPrice, data)
+	tx := types.NewTransaction(nonce, toAddress, bigAmount, 210000, gasPrice, data)
 	return tx
+}
+
+func toEther(bal *big.Int) string  {
+	fbalance := new(big.Float)
+	fbalance.SetString(bal.String())
+	ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+	return ethValue.String()
 }

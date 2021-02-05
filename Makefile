@@ -22,9 +22,9 @@ install:
 	@echo "finished install binaries"
 
 # install geth and start with a specified account
-start:
+start:  clean
 	@cd scripts && exec ./start-node.sh
 
-stop:
+clean:
 	@cd scripts && exec ./stop-node.sh
 

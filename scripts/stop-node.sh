@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 pkill geth
-
+rm -rf $HOME/monitor
 #stop fabric networks
 cd fabric && ./network-stop.sh
 
