@@ -246,9 +246,10 @@ func (e *EthHanlder) buildTx(from, to, amount string) *types.Transaction {
 
 	txAmount, ok := new(big.Float).SetString(amount)
 	txAmount.Mul(txAmount, big.NewFloat(math.Pow10(18)))
-	bigAmount, ok :=new(big.Int).SetString(txAmount.String(), 10)
+	bigAmount := new(big.Int)
+	txAmount.Int(bigAmount)
 	if !ok {
-		log.Printf("Transaction amount not correct\n")
+		EthLogPrintf("Transaction amount not correct\n")
 		return nil
 	}
 
