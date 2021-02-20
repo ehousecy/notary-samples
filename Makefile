@@ -18,13 +18,20 @@ build:
 
 # install necessary binaries
 install:
+	@echo "start installing geth and fabric binaries"
 	@./scripts/download-binaries.sh
 	@echo "finished install binaries"
 
 # install geth and start with a specified account
-start:  clean
+start: install build clean
 	@cd scripts && exec ./start-node.sh
 
 clean:
 	@cd scripts && exec ./stop-node.sh
 
+demo:
+	@echo "demo process started"
+	@cd scripts && exec ./demo.sh
+
+start-server: start
+	@cd build && exec nohup ./notary-server &
