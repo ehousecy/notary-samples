@@ -6,7 +6,6 @@ if [ ! -d fabric-samples ]; then
 fi
 
 cd fabric-samples/test-network || exit
-./network.sh down
 ./network.sh up
 res=$?
 if [ $res -ne 0 ]; then
