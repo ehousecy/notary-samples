@@ -3,8 +3,6 @@
 print(){
   echo "$1"
 }
-#stop geth background
-pkill geth
 
 print "starting Notary service ..."
 print "starting ethereum node..."

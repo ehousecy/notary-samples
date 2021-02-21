@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/syndtr/goleveldb/leveldb"
 	"math/big"
-	"os"
-	"path/filepath"
+	"path"
+	"strings"
 )
 
 // ethereum monitor
@@ -38,7 +38,10 @@ func NewMonitor(url string) *EthMonitor {
 	if err != nil {
 		return nil
 	}
-	db, err := leveldb.OpenFile(filepath.Join(os.Getenv("HOME"), ".notary-samples","etherTxDB"), nil)
+	cfgHome := ConfigHome()
+	dbPath := path.Join(cfgHome,"monitor")
+	fileName := strings.Join([]string{dbPath, "monitor.db"}, "/")
+	db, err := leveldb.OpenFile(fileName, nil)
 	if err != nil {
 		return nil
 	}
