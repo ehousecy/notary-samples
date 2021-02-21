@@ -7,16 +7,22 @@ demoPrint (){
 
 #generate accounts
 fromInfo=$(../build/notary-cli gen-account)
-fromAddress=${fromInfoF:29:42}
+# fromAddress=${fromInfoF:29:42}
+substr=${fromInfo#*Address:}
+address=${substr:0:45}
+fromAddress=${address}
 fromPriv=${fromInfo:85}
 toInfo=$(../build/notary-cli gen-account)
 toAddress=${toInfo:29:42}
-demoPrint "generating ethereum Accounts:"
-demoPrint "generated sender account : $fromAddress"
-demoPrint "sender account private key: $fromPriv"
-demoPrint "generated receiver account: $toAddress"
+#demoPrint "generating ethereum Accounts:"
+#demoPrint "generated sender account : $fromAddress"
+#demoPrint "sender account private key: $fromPriv"
+#demoPrint "generated receiver account: $toAddress"
 toBalance=$(../build/notary-cli account --account $toAddress --network-type ethereum)
-demoPrint "ethereum receiver address balance: $toBalance"
+#demoPrint "ethereum receiver address balance: $toBalance"
+#echo "user: Alice"
+#echo "\t network \t account \t balance"
+#echo "\t ethereum \t $fromAddress \t $fromBalance
 
 # apply ethereum from faucet and display sender address info
 demoPrint "applying eth from faucet for sender account"
@@ -24,7 +30,13 @@ demoPrint "applying eth from faucet for sender account"
 sleep 5
 fromBalance=$(../build/notary-cli account --account $fromAddress --network-type ethereum)
 demoPrint "ethereum sender account balance: $fromBalance"
+echo "user: Alice"
+printf "%8s %43s %s\n" "network" "account" "balance"
+printf "%8s %43s %4f\n" "ethereum" "$fromAddress" "$fromBalance"
+printf "%8s %43s %4f\n" "fabric" "$fromAddress" "$fromBalance"
 
+
+exit 1
 # display fabric assets
 fabBalance=$(../build/notary-cli account --network-type fabric --fchannel mychannel --fcc basic --account asset1)
 demoPrint "fabric assets: $fabBalance"
@@ -53,21 +65,26 @@ if [ $? -ne 0 ];then
 fi
 
 demoPrint "submitting ethereum transaction"
-../build/notary-cli submit --network-type ethereum --private-key $fromPriv --ticket-id $id
+resp=$(../build/notary-cli submit --network-type ethereum --private-key $fromPriv --ticket-id $id)
 
 if [ $? -ne 0 ];then
   demoPrint "failed to submit ethereum transaction"
   exit 1
 fi
 
+demoPrint "submitted ethereum tx"
+
 #wait for 6 block confirmation
+demoPrint "waiting for ethereum network confirm tx"
 sleep 16
 
 #approve cross-chain ticket
-../build/notary-cli approve --ticket-id $id
-
+demoPrint "approving cross chain ticket"
+resp=$(../build/notary-cli approve --ticket-id $id)
+demoPrint "successfully approved cross-chain ticket"
 #display blockchain properties
 # wait for a new block
+demoPrint "waiting for blockchain confirm transactions..."
 sleep 6
 
 toBalance=$(../build/notary-cli account --network-type ethereum --account $toAddress)
