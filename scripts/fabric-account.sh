@@ -1,5 +1,7 @@
 #!/bin/bash
-cd ./scripts/fabric/fabric-samples/test-network || exit 1
+cd $(dirname $0) || exit 1
+dir=$(pwd)
+cd $dir/fabric/fabric-samples/test-network || exit 1
 export PATH=${PWD}/../bin:$PATH
 export FABRIC_CFG_PATH=$PWD/../config/
 
