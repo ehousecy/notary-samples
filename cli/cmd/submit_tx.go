@@ -92,7 +92,6 @@ type TxBuilder interface {
 }
 
 func execFabricSubmit(ticketID, privateKeyPath string) {
-	log.Println("start transfer FabricSubmitTx method=====================")
 	mspDir := viper.GetString(subMSPDirKey)
 	signCert := viper.GetString(subCertKey)
 	mspID := viper.GetString(subMSPKey)
@@ -135,7 +134,7 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 	exitErr(err)
 	err = srv.Send(&pb.TransferPropertyRequest{
 		Data:        creator,
-		TicketId:       ticketID,
+		TicketId:    ticketID,
 		NetworkType: pb.NetworkType_fabric,
 	})
 	exitErr(err)
@@ -158,7 +157,6 @@ func execFabricSubmit(ticketID, privateKeyPath string) {
 		}
 	}
 	_ = srv.CloseSend()
-	log.Println("end transfer FabricSubmitTx method=====================")
 }
 
 func NewTxBuilder(txType string) TxBuilder {
@@ -180,7 +178,7 @@ func (e *EthBuilder) BuildTx(ticketId, priv string, stream pb.NotaryService_Subm
 		return errors.New("Invalid private key ")
 	}
 	err = stream.Send(&pb.TransferPropertyRequest{
-		TicketId:       ticketId,
+		TicketId:    ticketId,
 		NetworkType: pb.NetworkType_eth,
 	})
 	if err != nil {

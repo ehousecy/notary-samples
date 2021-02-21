@@ -23,6 +23,7 @@ install:
 
 # install geth and start with a specified account
 start:
+	@make stop
 	@cd scripts && exec ./start-node.sh
 
 stop:
