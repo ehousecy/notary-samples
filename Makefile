@@ -31,7 +31,6 @@ clean:
 	@cd scripts && exec ./stop-node.sh
 
 demo:
-	@echo "demo process started"
 	@cd scripts && exec ./demo.sh
 
 start-server: start

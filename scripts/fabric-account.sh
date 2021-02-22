@@ -16,7 +16,7 @@ if [ $res -ne 0 ]; then
     echo "Failed to query fabric org1 admin account id..."
     exit 1
 fi
-echo "org1 admin account: $org1admin"
+#echo "org1 admin account: $org1admin"
 
 export CORE_PEER_LOCALMSPID="Org2MSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
@@ -28,4 +28,5 @@ if [ $res -ne 0 ]; then
     echo "Failed to query fabric org2 admin account id..."
     exit 1
 fi
-echo "org2 admin account: $org2admin"
+#echo "org2 admin account: $org2admin"
+echo "{\"org1\":\"$org1admin\",\"org2\":\"$org2admin\"}"
