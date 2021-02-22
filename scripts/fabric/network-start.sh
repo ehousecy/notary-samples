@@ -6,7 +6,6 @@ if [ ! -d fabric-samples ]; then
 fi
 
 cd fabric-samples/test-network || exit
-./network.sh down
 ./network.sh up
 res=$?
 if [ $res -ne 0 ]; then
@@ -20,7 +19,7 @@ if [ $res -ne 0 ]; then
     fatalln "Failed to create fabric channel..."
 fi
 sleep 1
-./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
+./network.sh deployCC -ccn basic -ccp ../../token-erc-20/chaincode-go -ccl go
 res=$?
 if [ $res -ne 0 ]; then
     fatalln "Failed to deploy fabric chaincode..."
