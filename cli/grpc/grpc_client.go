@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	address     = "localhost:50051"
+	address     = "localhost:37788"
 	defaultName = "notary-service"
 )
 

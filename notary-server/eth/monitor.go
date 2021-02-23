@@ -8,7 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/syndtr/goleveldb/leveldb"
 	"math/big"
-	"sync"
+	"path"
+	"strings"
 )
 
 // ethereum monitor
@@ -30,7 +31,6 @@ type EthMonitor struct {
 	systemDb    interface{}
 	subs []chan txConfirmEvent
 	done        chan interface{}
-	wg sync.WaitGroup
 }
 
 func NewMonitor(url string) *EthMonitor {
@@ -38,34 +38,36 @@ func NewMonitor(url string) *EthMonitor {
 	if err != nil {
 		return nil
 	}
-	db, err := leveldb.OpenFile("~/.ehouse/etherTx.db", nil)
+	cfgHome := ConfigHome()
+	dbPath := path.Join(cfgHome,"monitor")
+	fileName := strings.Join([]string{dbPath, "monitor.db"}, "/")
+	db, err := leveldb.OpenFile(fileName, nil)
 	if err != nil {
 		return nil
 	}
+	id, _ := c.NetworkID(context.Background())
+	EthLogPrintf("Ethereum network Id: %s", id.String())
 	return &EthMonitor{
 		Client:      c,
 		DBInterface: db,
 		done:        make(chan interface{}, 1),
-		subs: make([]chan txConfirmEvent, 200),
 	}
 }
 
 func (m *EthMonitor) Start() {
 	go m.loop()
-	m.wg.Add(1)
-
 }
 
 func (m *EthMonitor) Stop() {
 	close(m.done)
 }
 
-func (m *EthMonitor)Subscribe(eventChan chan txConfirmEvent)  {
-	if len(m.subs) == 0 {
-		m.wg.Done()
+func (m *EthMonitor)Subscribe(eventChan chan txConfirmEvent) *EthMonitor {
+	if m.subs == nil {
+		m.subs = make([]chan txConfirmEvent, 0,10)
 	}
 	m.subs = append(m.subs, eventChan)
-	return
+	return m
 }
 
 func (m *EthMonitor) loop() {
@@ -99,6 +101,7 @@ func (m *EthMonitor) loop() {
 // if a new transaction is sent out, add the transaction hash in the watching list
 // called by ethereum handler
 func (m *EthMonitor) AddTxRecord(txhash string) error {
+	EthLogPrintf("received ethereum transaction, id: %s", txhash)
 	key := []byte(txhash)
 	val := new(big.Int).SetUint64(0)
 	err := m.DBInterface.Put(key, val.Bytes(), nil)
@@ -144,8 +147,9 @@ func (m *EthMonitor) confirmBlock(targetHeight *big.Int) {
 	for iter.Next() {
 		val := iter.Value()
 		txHeight.SetBytes(val)
+		txHash := fmt.Sprintf("%s", iter.Key())
+		EthLogPrintf("confirming tx, hash %s, height %s", txHash, txHeight)
 		if txHeight.Cmp(targetHeight) <= 0 {
-			txHash := fmt.Sprintf("%x", iter.Key())
 			m.validateReceipt(txHash, targetHeight)
 		}
 	}
@@ -187,7 +191,6 @@ func (m *EthMonitor) validateReceipt(txHash string, targetHeight *big.Int) {
 		return
 	}
 	receiptRes := isSuccess(txReceipt)
-	m.wg.Wait()
 	m.notify(txHash, receiptRes)
 
 }
@@ -203,10 +206,13 @@ func (m *EthMonitor) notify(txhash string, isSuccess bool) error {
 			sub <- txEvent
 		}
 	}
+	EthLogPrintf("send out tx confirm event, tx id: %s", txhash)
+	m.RemoveTx(txhash)
 	return nil
 }
 
 func (m *EthMonitor)RemoveTx(txhash string) error  {
+	EthLogPrintf("Confirmed tx, removing tx: %s", txhash)
 	key := []byte(txhash)
 	err := m.DBInterface.Delete(key, nil)
 	return err

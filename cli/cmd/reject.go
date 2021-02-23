@@ -14,7 +14,7 @@ const (
 )
 
 func init() {
-	err := addStringOption(approveCmd, rejectTicketKey, ticketIdOption, "", "", ticketDescription, required)
+	err := addStringOption(rejectCmd, rejectTicketKey, ticketIdOption, "", "", ticketDescription, required)
 	exitErr(err)
 }
 
@@ -24,7 +24,7 @@ var rejectCmd = &cobra.Command{
 }
 
 func execRejectCmd(cmd *cobra.Command, args []string) {
-	ticketId := viper.GetString(appTicketKey)
+	ticketId := viper.GetString(rejectTicketKey)
 	client := grpc.NewClient()
 	op := proto.TicketOps_reject
 	resp, err := client.OpTicket(context.Background(), &proto.AdminOpTicketReq{

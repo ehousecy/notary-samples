@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"github.com/ehousecy/notary-samples/notary-client/fabutil"
 	"github.com/ehousecy/notary-samples/proto"
 	"google.golang.org/grpc"
 	"log"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -19,9 +22,8 @@ func main() {
 	defer conn.Close()
 	client := proto.NewNotaryServiceClient(conn)
 
-	CreateCTX(client)
-
-	SubmitTx(client)
+	//CreateCTX(client)
+	//FabricSubmitTx(client)
 	GetTicket(client)
 
 }
@@ -37,18 +39,42 @@ func GetTicket(client proto.NotaryServiceClient) {
 	log.Println("end transfer GetTicket method=====================")
 }
 
-func SubmitTx(client proto.NotaryServiceClient) {
-	log.Println("start transfer SubmitTx method=====================")
-	response, err := client.SubmitTx(context.Background(), &proto.TransferPropertyRequest{
-		SignedData:  []byte("hello boy"),
-		CTxId:       "123456",
-		NetworkType: proto.TransferPropertyRequest_eth,
-	})
+func FabricSubmitTx(client proto.NotaryServiceClient) {
+	log.Println("start transfer FabricSubmitTx method=====================")
+	srv, err := client.SubmitTx(context.Background())
+	checkErr(err)
+	WorkPath, err := os.Getwd()
+	//获取creator
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	log.Printf("txId=%s", response.ETxid)
-	log.Println("end transfer SubmitTx method=====================")
+	filepath.Join(WorkPath, "Admin@org1.example.com-cert.pem")
+	creator, err := fabutil.GetCreator("Org1MSP", filepath.Join(WorkPath, "notary-client/Admin@org1.example.com-cert.pem"))
+	checkErr(err)
+	//获取签名
+	privateKey, err := fabutil.GetPrivateKey(filepath.Join(WorkPath, "notary-client/priv_sk"))
+	checkErr(err)
+	err = srv.Send(&proto.TransferPropertyRequest{
+		Data:        creator,
+		CTxId:       "1",
+		NetworkType: proto.TransferPropertyRequest_fabric,
+	})
+	checkErr(err)
+	recv, err := srv.Recv()
+	checkErr(err)
+	//签名proposal
+	sign, err := fabutil.Sign(recv.TxData, privateKey)
+	checkErr(err)
+	err = srv.Send(&proto.TransferPropertyRequest{Data: sign})
+	checkErr(err)
+	recv, err = srv.Recv()
+	checkErr(err)
+	//签名交易
+	sign, err = fabutil.Sign(recv.TxData, privateKey)
+	checkErr(err)
+	err = srv.Send(&proto.TransferPropertyRequest{Data: sign})
+	checkErr(err)
+	log.Println("end transfer FabricSubmitTx method=====================")
 }
 
 func CreateCTX(client proto.NotaryServiceClient) {
@@ -59,13 +85,19 @@ func CreateCTX(client proto.NotaryServiceClient) {
 		EAmount:        "789",
 		FFrom:          "ffrom",
 		FTo:            "fto",
-		FAmount:        "fa",
-		FChannel:       "channel",
-		FChaincodeName: "chaincode",
+		FAmount:        "asset17",
+		FChannel:       "mychannel",
+		FChaincodeName: "basic",
 	}})
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Printf("cid=%v", response.CTxId)
 	log.Println("end transfer CreateCTX method=====================")
+}
+
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

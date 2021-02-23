@@ -14,6 +14,7 @@ service NotaryService {
   rpc GetTicket(QueryTxRequest) returns (QueryTxResponse){}
   rpc OpTicket(AdminOpTicketReq) returns (AdminOpTicketResp) {}
   rpc TestDial(Ping) returns (Pong){} // grpc test purpose
+  rpc QueryBlock(queryBlockReq) returns(queryBlockResp){}
 }
 
 // empty message, used to fill in the rpc arguments or return types
@@ -57,7 +58,7 @@ message CreateCrossTxReq {
 // if error happens, fill error code and error message.
 message CreateCrossTxResp {
   Error error = 1;
-  string cTxId =  2; //cross transaction id
+  string ticketId =  2; //cross transaction id
   string vEthAddress =  3;
   string vFabAddress = 4;
   google.protobuf.Timestamp createTime = 5;
@@ -66,13 +67,14 @@ message CreateCrossTxResp {
 
 // this request is used for users to send tokens to the verifier/notary
 // in this request, user should specify the target cross transaction id and network type(ether or fabric)
+enum NetworkType{
+  eth = 0;
+  fabric = 1;
+}
+
 message TransferPropertyRequest{
   bytes data = 1; // signed ether transaction data
-  string cTxId = 2; // cross transaction id
-  enum NetworkType{
-    eth = 0;
-    fabric = 1;
-  }
+  string ticketId = 2; // cross transaction id
   NetworkType networkType = 3;
 }
 
@@ -123,7 +125,7 @@ message CrossTxStatus{
 
 // cross transaction ticket info
 message CrossTx {
-  string cTxId = 1;
+  string ticketId = 1;
   CrossTxDetail detail = 2;
   CrossTxStatus status = 3;
   google.protobuf.Timestamp createTime = 4;
@@ -175,3 +177,21 @@ message AdminOpTicketResp{
   Error err = 1;
 }
 
+
+message fabricAccout {
+  string channelName = 1;
+  string chaincodeName = 2;
+  string accountInfo = 3;
+}
+
+message queryBlockReq{
+  NetworkType network = 1;
+  oneof account{
+    string ethAcc = 2;
+    fabricAccout fabricAcc = 3;
+  }
+}
+
+message queryBlockResp{
+  string info = 1;
+}
