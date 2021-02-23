@@ -55,16 +55,16 @@ func (th *txHandler) ConstructAndSignTx(srv pb.NotaryService_SubmitTxServer, rec
 	if err != nil {
 		return err
 	}
+	//获取fabric skd client对象
+	c, err := client.GetClientByChannelID(crossTxInfo.FabricChannel)
+	if err != nil {
+		return err
+	}
 	request, err := th.bs.CreateFromRequest(crossTxInfo.FabricChannel, business.RequestParams{
 		ChaincodeName: crossTxInfo.FabricChaincode,
 		Asset:         crossTxInfo.FabricAmount,
 		From:          crossTxInfo.FabricFrom,
 	})
-	if err != nil {
-		return err
-	}
-	//获取fabric skd client对象
-	c, err := client.GetClientByChannelID(crossTxInfo.FabricChannel)
 	if err != nil {
 		return err
 	}

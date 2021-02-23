@@ -64,6 +64,6 @@ func execQueryAccountCmd(cmd *cobra.Command, args []string) {
 		fmt.Println("Query Account error:", err)
 		return
 	}
-	fmt.Println(resp)
+	fmt.Println(resp.Info)
 
 }
