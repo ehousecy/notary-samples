@@ -25,12 +25,12 @@ make build
 
 如果执行成功会在当前目录下新建`build`目录，并存放`notary-server`和`notary-cli`可执行文件。
 
-### 准备以太坊
+### 准备以太坊账户
 
-使用以下命令来生成以太坊账户：
+使用以下命令来生成两个以太坊账户：
 
 ```shell
-./build/notary-cli gen-account
+./scripts/demo-account.sh eth -n 2
 ```
 
 执行成功将看到类似如下输出：
@@ -39,35 +39,19 @@ make build
 Generated Account:
 Address:  0x8635A5A979F56CfBE310C79241F941A16D3d70c5
 Private Key:  25e5f1a85a18292c7abbf629857e3cd3e01a762c38e790c332829ce912088400
-```
-
-输出中`Address`为以太坊地址，`Private Key`是对应的私钥，用于对交易签名。后续执行跨链交易时需要这两个信息，因此我们将其保存在环境变量中。
-
-```shell
-export AliceEthAcc=0x8635A5A979F56CfBE310C79241F941A16D3d70c5 && export AliceEthPK=25e5f1a85a18292c7abbf629857e3cd3e01a762c38e790c332829ce912088400
-```
-
-> Note:每次生成的以太账户是不同的，上述命令因填入`./build/notary-cli gen-account`的返回值
-
-重复以上步骤生成一个接收资产以太坊账户
-
-```shell
-./build/notary-cli gen-account
-```
-
-输出：
-
-```shell
 Generated Account:
 Address:  0xB696AaF5ea7455a65Be5a765c9b9F2e351B60a09
 Private Key:  c25a485cefa7ff54b29680c477fc89c4ccb16ca975fd861af864ae6b63227000
 ```
 
-设置接收资产以太坊账户环境变量
+输出中`Address`为以太坊地址，`Private Key`是对应的私钥，用于对交易签名。后续执行跨链交易时需要用到以太坊账户信息，因此我们将其保存在环境变量中。
 
 ```shell
+export AliceEthAcc=0x8635A5A979F56CfBE310C79241F941A16D3d70c5 && export AliceEthPK=25e5f1a85a18292c7abbf629857e3cd3e01a762c38e790c332829ce912088400
 export BobEthAcc=0xB696AaF5ea7455a65Be5a765c9b9F2e351B60a09 && export BobEthPK=c25a485cefa7ff54b29680c477fc89c4ccb16ca975fd861af864ae6b63227000
 ```
+
+> Note:每次生成的以太账户是不同的，上述命令因填入`./build/notary-cli gen-account`的返回值
 
 执行以下命令为转账账户申请以太
 
@@ -80,7 +64,7 @@ export BobEthAcc=0xB696AaF5ea7455a65Be5a765c9b9F2e351B60a09 && export BobEthPK=c
 执行以下命令查看fabric账户
 
 ```shell
-./scripts/fabric-account.sh
+./scripts/demo-account.sh fabric
 ```
 
 执行成功将看到类似如下输出：
@@ -114,7 +98,7 @@ cd notary-samples
 如果不想切换terminal，可以使用以下命令后台启动跨链服务:
 
 ```shell
-nohup ./build/notary-server &
+make start-server
 ```
 
 ## 查询跨链前资产信息
@@ -135,7 +119,7 @@ nohup ./build/notary-server &
 ### 1.创建跨链交易
 
 ```shell
-./build/notary-cli create-ticket --efrom $AliceEthAcc --eto $BobEthAcc --eamount 10 --ffrom $AliceFabricAcc --fto $BobFabricAcc --famount 100 --fchannel mychannel --fcc basic
+./build/notary-cli create-ticket --efrom $AliceEthAcc --eto $BobEthAcc --eamount 10 --ffrom $BobFabricAcc --fto $AliceFabricAcc --famount 100 --fchannel mychannel --fcc basic
 ```
 
 如果创建跨链交易成功，将会看到类似以下输出：
@@ -169,7 +153,7 @@ export ticketId=1
 ### 3.用户提交fabric交易
 
 ```shell
-./build/notary-cli submit --network-type fabric --msp-path $Alice_MSP_HOME --msp-id Org1MSP --ticket-id $ticketId
+./build/notary-cli submit --network-type fabric --msp-path $Bob_MSP_HOME --msp-id Org2MSP --ticket-id $ticketId
 ```
 
 交易提交后跨链server服务会打印类似以下输入确认交易落块：

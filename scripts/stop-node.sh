@@ -1,5 +1,9 @@
 #!/usr/bin/env sh
 
+# stop notary server
+pkill notary-server
+
+#stop eth networks
 pkill geth
 rm -rf $HOME/monitor
 #stop fabric networks

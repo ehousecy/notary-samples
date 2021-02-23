@@ -93,6 +93,9 @@ func (cts CrossTxDataServiceProvider) CreateTransferFromTx(cidStr string, txID s
 }
 
 func (cts CrossTxDataServiceProvider) ValidateEnableBoundTransferToTx(boundTxID string, cIDChan chan string) error {
+	if boundTxID == "" {
+		return fmt.Errorf("Parameter error, txID cannot be empty")
+	}
 	ctd, td, err := getCrossTxDetailAndTxDetailByTxID(boundTxID)
 	if err != nil {
 		return err
