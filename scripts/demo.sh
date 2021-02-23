@@ -136,10 +136,12 @@ if [ "$id" == "" ];then
   exit 1
 fi
 printf "\n\t 1. created cross-chain ticket, ID: %s\n" "$id"
+printf "\t    [info]:Alice tranfering 10 eth for Bob 100 fabric assets\n"
 
 #submit transactions
 
 printf "\t 2. submitting fabric transaction\n"
+printf "\t   [info]: sending 100 fabric asset from Bob to Notary address\n"
 Alice_MSP_HOME=$HOME/.notary-samples/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
 Bob_MSP_HOME=$HOME/.notary-samples/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
 cmdResp=$(../build/notary-cli submit --network-type fabric --msp-path $Bob_MSP_HOME --msp-id Org2MSP --ticket-id $id 2>&1)
@@ -149,14 +151,13 @@ if [ $? -ne 0 ];then
 fi
 
 printf "\t 3. submitting ethereum transaction\n"
+printf "\t   [info]: sending 10 eth from Alice to Notary address\n"
 resp=$(../build/notary-cli submit --network-type ethereum --private-key $fromPriv --ticket-id $id 2>&1)
 
 if [ $? -ne 0 ];then
   printf "failed to submit ethereum transaction\n"
   exit 1
 fi
-
-echo ${resp}
 
 
 #wait for 6 block confirmation
@@ -165,6 +166,7 @@ sleep 16
 
 #approve cross-chain ticket
 printf "\t 4. approving cross chain ticket\n"
+printf "\t   [info]:transfering ethereum and fabric assets from Notary to the finally receiver\n"
 cmdResp=$(../build/notary-cli approve --ticket-id $id 2>&1)
 printf "\t   [info]:successfully approved cross-chain ticket\n"
 #display blockchain properties
