@@ -4,7 +4,120 @@
 git clone https://github.com/ehousecy/notary-samples.git
 ```
 
-## 测试区块链网络环境搭建
+## 安装先决条件
+
+在开始前，请检查系统中是否已安装以下所有必备软件
+
+* [Docker](https://www.docker.com/get-docker) and [Docker Compose](https://github.com/docker/compose/releases)
+* [Go Programming Language](https://golang.org/dl/), version 1.15.x is required
+* expect
+* [cURL](https://curl.haxx.se/download.html)
+* [Git](https://git-scm.com/downloads)
+* gcc、g++、make
+
+确保安装以上软件后进入项目目录。
+
+```bash
+cd notary-samples
+```
+
+## 快速体验
+
+项目中提供Makefile文件用于快速启动，演示项目。演示项目中包含Alice和Bob两个用户，Alice将会使用10个eth换取Bob的100个fabric资产。首先使用以下命令启动项目：
+
+```bash
+make start-server
+```
+
+上述命令第一次执行时会下载fabric、以太坊网络所需材料。然后启动fabric和以太坊网络，编译本项目，后台启动跨链server服务端。
+
+成功完成后，它将在您的终端窗口中输入以下内容：
+
+```bash
+====================== [finished] init Fabric network data =========================
+====================== [finished] start Fabric docker network =========================
+started fabric network
+nohup: appending output to 'nohup.out'
+```
+
+可以滚动浏览这些日志以查看上述命令执行的各个操作。
+
+接下来，可以使用以下命令完成跨链转账操作：
+
+```bash
+make demo
+```
+
+执行成功将看到类似以下日志输出：
+
+```bash
+==============================initializing==============================
+
+applying eth for Alice...
+applied 100eth for alice
+
+-----------------------------Alice Account info-----------------------------
++----------+--------------------------------------------+---------+
+|Network   |Account                                     |Balance  |
++----------+--------------------------------------------+---------+
+|ethereum  |0x58c70AF0c74e2f59CEDA7B182C21a4231bEEcAE3  |100      |
+|fabric    |24C765DDAB05CE99B372D0F8213B25AE            |1000     |
++----------+--------------------------------------------+---------+
+
+-----------------------------Bob Account info-----------------------------
++----------+--------------------------------------------+---------+
+|Network   |Account                                     |Balance  |
++----------+--------------------------------------------+---------+
+|ethereum  |0xf41478cbF97A77e545c349592E7606aD6F997b4d  |0        |
+|fabric    |3EFBA4A917844CAE85B768012D62ED37            |2000     |
++----------+--------------------------------------------+---------+
+
+==============================transferring asset across blockchain==============================
+
+
+         1. created cross-chain ticket, ID: 1
+            [info]:Alice tranfering 10 eth for Bob 100 fabric assets
+         2. submitting fabric transaction
+           [info]: sending 100 fabric asset from Bob to Notary address
+         3. submitting ethereum transaction
+           [info]: sending 10 eth from Alice to Notary address
+           [info]: waiting for ethereum network confirm tx
+         4. approving cross chain ticket
+           [info]:transfering ethereum and fabric assets from Notary to the finally receiver
+           [info]:successfully approved cross-chain ticket
+           [info]: waiting for blockchain confirm transactions...
+
+==============================finished transfer assets==============================
+
+
+-----------------------------Alice Account info-----------------------------
++----------+--------------------------------------------+---------+
+|Network   |Account                                     |Balance  |
++----------+--------------------------------------------+---------+
+|ethereum  |0x58c70AF0c74e2f59CEDA7B182C21a4231bEEcAE3  |90       |
+|fabric    |24C765DDAB05CE99B372D0F8213B25AE            |1100     |
++----------+--------------------------------------------+---------+
+
+-----------------------------Bob Account info-----------------------------
++----------+--------------------------------------------+---------+
+|Network   |Account                                     |Balance  |
++----------+--------------------------------------------+---------+
+|ethereum  |0xf41478cbF97A77e545c349592E7606aD6F997b4d  |10       |
+|fabric    |3EFBA4A917844CAE85B768012D62ED37            |1900     |
++----------+--------------------------------------------+---------+
+```
+
+日志输出中可以看到，Alice和Bob完成了fabric和以太坊的资产交换。
+
+最后，让我们把关闭整个网络，以便下面分步骤演示跨链执行过程。以下命令将关闭fabric、以太坊网络以及跨链服务server端：
+
+```bash
+make clean
+```
+
+下面将会分步骤演示跨链执行过程。
+
+## 搭建区块链网络环境
 
 ```bash
 #进入项目

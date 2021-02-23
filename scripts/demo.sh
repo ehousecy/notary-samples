@@ -3,7 +3,6 @@
 
 . utils.sh
 
-printf "\n==============================initializing==============================\n\n"
 #generate accounts
 fromInfo=$(./demo-account.sh eth)
 # fromAddress=${fromInfoF:29:42}
