@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+
+// auto gen codes: protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative *.proto
+
+package proto;
+option go_package = "github.com/ehousecy/notary-samples/proto";
+import "google/protobuf/timestamp.proto";
+
+service NotaryService {
+  rpc CreateCTX(CreateCrossTxReq) returns (CreateCrossTxResp) {}
+  rpc SubmitTx(stream TransferPropertyRequest) returns(stream TransferPropertyResponse) {}
+  rpc ListTickets(Empty) returns (ListTxResponse) {}
+  rpc GetTicket(QueryTxRequest) returns (QueryTxResponse){}
+  rpc OpTicket(AdminOpTicketReq) returns (AdminOpTicketResp) {}
+  rpc TestDial(Ping) returns (Pong){} // grpc test purpose
+  rpc QueryBlock(queryBlockReq) returns(queryBlockResp){}
+}
+
+// empty message, used to fill in the rpc arguments or return types
+message Ping{
+  string ping =  1;
+}
+
+message Pong{
+  string pong = 1;
+}
+
+message Empty{
+
+}
+
+// cross chain transaction filled parameters
+message CrossTxDetail {
+  string eFrom = 1;
+  string eTo = 2;
+  string eAmount = 3;
+  string fFrom = 4;
+  string fTo = 5;
+  string fAmount = 6;
+  string fChannel = 7;
+  string fChaincodeName = 8;
+}
+
+// error message with error code, set code to none-zero values if error happens
+// record error message in errMsg
+message Error{
+  int32 code =  1;
+  string errMsg = 2;
+}
+
+// Request received from user to specify a cross chain transaction
+message CreateCrossTxReq {
+  CrossTxDetail detail = 1;
+}
+
+// Response send to user or client when a specified request received.
+// if error happens, fill error code and error message.
+message CreateCrossTxResp {
+  Error error = 1;
+  string ticketId =  2; //cross transaction id
+  string vEthAddress =  3;
+  string vFabAddress = 4;
+  google.protobuf.Timestamp createTime = 5;
+
+}
+
+// this request is used for users to send tokens to the verifier/notary
+// in this request, user should specify the target cross transaction id and network type(ether or fabric)
+enum NetworkType{
+  eth = 0;
+  fabric = 1;
+}
+
+message TransferPropertyRequest{
+  bytes data = 1; // signed ether transaction data
+  string ticketId = 2; // cross transaction id
+  NetworkType networkType = 3;
+}
+
+// response of the LockEtherRequest, return ether transaction id or receipt if necessary,
+// or return error message if transaction is not valid
+message TransferPropertyResponse{
+  Error error = 1;
+  bytes txData = 2;
+}
+
+
+// list cross transaction, add filter if necessage
+message ListTxRequest{
+
+}
+
+
+// BlockchainTxStatus is used to record blockchain transaction status, once a cross transaction is created notary service should
+// start monitoring different blockchain updates and record tx status in BlockchainTxStatus.
+enum BlockchainTxStatus{
+  waitingUserSent = 0;
+  waitingVConfirm = 1;
+  vConfirmed = 2;
+  waitingUConfirm = 3;
+  uConfirmed = 4;
+  failed = 5;
+}
+
+// EscrowingStatus means ethereum tx execute result, fabric tx execute result is also included.
+message EscrowStatus{
+  BlockchainTxStatus eStatus = 1;
+  BlockchainTxStatus fStatus = 2;
+}
+
+// cross transaction ticket status
+enum TicketStatus{
+  created = 0;
+  finished = 1;
+  txFailed = 2;
+}
+
+message CrossTxStatus{
+  oneof status{
+    TicketStatus tStatus = 1;
+    EscrowStatus eStatus = 2;
+  }
+}
+
+// cross transaction ticket info
+message CrossTx {
+  string ticketId = 1;
+  CrossTxDetail detail = 2;
+  CrossTxStatus status = 3;
+  google.protobuf.Timestamp createTime = 4;
+  google.protobuf.Timestamp lastUpdateTime = 5;
+}
+
+// blockchain transaction records
+message TxIdsInBlock{
+  string UETid = 1;
+  string VETid = 2;
+  string FETid = 3;
+  string FVTid = 4;
+}
+
+
+// list all the cross chain transaction tickets with detail info
+// set error message to error if error happens
+message ListTxResponse{
+  Error error = 1;
+  repeated CrossTx detail = 2;
+}
+
+// query cross transaction with specified ticket id
+message QueryTxRequest{
+  string ticketId = 1;
+}
+
+// response to query cross chain transaction ticket with specified ticket id
+message QueryTxResponse{
+  Error error = 1;
+  CrossTx detail = 2;
+  TxIdsInBlock blockchainTxs = 3;
+}
+
+enum TicketOps{
+  approve = 0;
+  reject = 1;
+  quite = 2;
+}
+
+// admin approve or reject a cross transaction ticket
+message AdminOpTicketReq{
+  string cTxTicketId = 1;
+  TicketOps op = 2;
+}
+
+// admin operation response, set error code to None-zero if error happens
+message AdminOpTicketResp{
+  Error err = 1;
+}
+
+
+message fabricAccout {
+  string channelName = 1;
+  string chaincodeName = 2;
+  string accountInfo = 3;
+}
+
+message queryBlockReq{
+  NetworkType network = 1;
+  oneof account{
+    string ethAcc = 2;
+    fabricAccout fabricAcc = 3;
+  }
+}
+
+message queryBlockResp{
+  string info = 1;
+}
