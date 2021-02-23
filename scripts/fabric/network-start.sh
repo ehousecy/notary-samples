@@ -9,20 +9,20 @@ cd fabric-samples/test-network || exit
 ./network.sh up
 res=$?
 if [ $res -ne 0 ]; then
-    fatalln "Failed to up fabric network..."
+  fatalln "Failed to up fabric network..."
 fi
 
 sleep 1
 ./network.sh createChannel
 res=$?
 if [ $res -ne 0 ]; then
-    fatalln "Failed to create fabric channel..."
+  fatalln "Failed to create fabric channel..."
 fi
 sleep 1
 ./network.sh deployCC -ccn basic -ccp ../../token-erc-20/chaincode-go -ccl go
 res=$?
 if [ $res -ne 0 ]; then
-    fatalln "Failed to deploy fabric chaincode..."
+  fatalln "Failed to deploy fabric chaincode..."
 fi
 sleep 1
 
@@ -31,22 +31,27 @@ cd ../..
 
 #cp msp to server fabric business
 if [ ! -d "$HOME"/.notary-samples ]; then
-    if [ -f "$HOME"/.notary-samples ]; then
-        rm -f "$HOME"/.notary-samples
-        res=$?
-        if [ $res -ne 0 ]; then
-            fatalln "Failed to rm $HOME/.notary-samples file..."
-        fi
-    fi
-    mkdir "$HOME"/.notary-samples
+  if [ -f "$HOME"/.notary-samples ]; then
+    rm -f "$HOME"/.notary-samples
     res=$?
-        if [ $res -ne 0 ]; then
-            fatalln "Failed to exec mkdir $HOME/.notary-samples dir..."
-        fi
+    if [ $res -ne 0 ]; then
+      fatalln "Failed to rm $HOME/.notary-samples file..."
+    fi
+  fi
+  mkdir "$HOME"/.notary-samples
+  res=$?
+  if [ $res -ne 0 ]; then
+    fatalln "Failed to exec mkdir $HOME/.notary-samples dir..."
+  fi
 fi
 cp -r fabric-samples/test-network/organizations "$HOME"/.notary-samples/
 res=$?
 if [ $res -ne 0 ]; then
-    fatalln "Failed to cp msp for server fabric business..."
+  fatalln "Failed to cp msp for server fabric business..."
 fi
 echo "====================== [finished] start Fabric docker network ========================="
+
+function fatalln() {
+  echo -e "$1"
+  exit 1
+}
